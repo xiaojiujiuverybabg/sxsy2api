@@ -33,7 +33,7 @@ const primaryItems = [
   { label: '工作台', path: '/dashboard', mark: '⌁' },
   { label: '密钥', path: '/keys', mark: '◇' },
   { label: '用量', path: '/usage', mark: '◌' },
-  { label: '购买', path: '/purchase', mark: '✦' },
+  { label: '订阅', path: '/subscriptions', mark: '✦' },
 ]
 
 const adminItems = [

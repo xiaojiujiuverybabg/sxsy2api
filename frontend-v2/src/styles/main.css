@@ -17,6 +17,34 @@
     backdrop-filter: blur(20px);
   }
 
+  /* 优化 select 下拉框样式 */
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+    padding-right: 2.5rem;
+  }
+
+  select:hover {
+    cursor: pointer;
+  }
+
+  /* 优化 select option 样式 */
+  select option {
+    background-color: rgb(15, 23, 42);
+    color: rgb(248, 250, 252);
+    padding: 0.5rem;
+  }
+
+  select option:hover,
+  select option:focus,
+  select option:checked {
+    background: linear-gradient(to right, rgba(220, 38, 38, 0.2), rgba(220, 38, 38, 0.1));
+    color: rgb(248, 250, 252);
+  }
+
   .atlas-kicker {
     font-size: 0.75rem;
     font-weight: 900;

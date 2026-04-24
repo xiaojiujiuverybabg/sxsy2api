@@ -14,19 +14,23 @@
         </div>
       </div>
 
-      <!-- User Navigation -->
+      <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto p-4">
         <div class="mb-2 px-2">
-          <p class="text-xs font-bold uppercase tracking-wider text-text-muted">用户功能</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-text-muted">
+            {{ isAdminMode ? '管理功能' : '用户功能' }}
+          </p>
         </div>
         <div class="space-y-1">
           <RouterLink
-            v-for="item in userNav"
+            v-for="item in currentNav"
             :key="item.to"
             :to="item.to"
             class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition"
             :class="isActive(item.to)
-              ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30 shadow-[0_0_15px_rgba(220,38,38,0.2)]'
+              ? isAdminMode
+                ? 'bg-gold-500/20 text-gold-400 border border-gold-500/30 shadow-[0_0_15px_rgba(251,191,36,0.2)]'
+                : 'bg-brand-500/20 text-brand-400 border border-brand-500/30 shadow-[0_0_15px_rgba(220,38,38,0.2)]'
               : 'text-text-secondary hover:bg-white/5 hover:text-white border border-transparent'"
           >
             <span class="text-lg">{{ item.icon }}</span>
@@ -64,7 +68,7 @@
     <!-- Main Content Area -->
     <main class="flex flex-1 flex-col overflow-hidden">
       <!-- Top Bar -->
-      <header class="flex items-center justify-between border-b border-brand-500/10 bg-surface-card/40 px-6 py-4 backdrop-blur-xl">
+      <header class="relative z-50 flex items-center justify-between border-b border-brand-500/10 bg-surface-card/40 px-6 py-4 backdrop-blur-xl">
         <div class="flex items-center gap-4">
           <div class="h-2 w-2 rounded-full bg-success-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
           <div>
@@ -79,46 +83,18 @@
             <span class="text-sm font-black text-brand-400">${{ formatBalance(balance) }}</span>
           </div>
 
-          <!-- Admin Menu -->
-          <div v-if="isAdmin" class="relative">
-            <button
-              @click="showAdminMenu = !showAdminMenu"
-              class="flex items-center gap-2 rounded-lg border border-gold-500/20 bg-gold-500/10 px-4 py-2 text-sm font-bold text-gold-400 transition hover:border-gold-500/40 hover:bg-gold-500/20"
-            >
-              <span>🎛️</span>
-              <span>管理功能</span>
-              <svg class="h-4 w-4 transition" :class="showAdminMenu ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            <!-- Admin Dropdown -->
-            <Transition
-              enter-active-class="transition duration-200 ease-out"
-              enter-from-class="opacity-0 scale-95"
-              enter-to-class="opacity-100 scale-100"
-              leave-active-class="transition duration-150 ease-in"
-              leave-from-class="opacity-100 scale-100"
-              leave-to-class="opacity-0 scale-95"
-            >
-              <div
-                v-if="showAdminMenu"
-                class="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-xl border border-white/10 bg-surface-card/95 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl"
-              >
-                <RouterLink
-                  v-for="item in adminNav"
-                  :key="item.to"
-                  :to="item.to"
-                  class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-bold transition"
-                  :class="isActive(item.to) ? 'bg-gold-500/20 text-gold-400' : 'text-white hover:bg-white/10'"
-                  @click="showAdminMenu = false"
-                >
-                  <span>{{ item.icon }}</span>
-                  <span>{{ item.label }}</span>
-                </RouterLink>
-              </div>
-            </Transition>
-          </div>
+          <!-- Mode Toggle Button (Admin Only) -->
+          <button
+            v-if="isAdmin"
+            @click="toggleMode"
+            class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-bold transition"
+            :class="isAdminMode
+              ? 'border-brand-500/20 bg-brand-500/10 text-brand-400 hover:border-brand-500/40 hover:bg-brand-500/20'
+              : 'border-gold-500/20 bg-gold-500/10 text-gold-400 hover:border-gold-500/40 hover:bg-gold-500/20'"
+          >
+            <span>{{ isAdminMode ? '👤' : '🎛️' }}</span>
+            <span>{{ isAdminMode ? '用户功能' : '管理功能' }}</span>
+          </button>
         </div>
       </header>
 
@@ -131,15 +107,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { confirm } from '@/utils/toast'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const showAdminMenu = ref(false)
+const isAdminMode = ref(false)
+
+// 根据当前路由自动判断模式
+watch(() => route.path, (newPath) => {
+  if (newPath.startsWith('/admin/')) {
+    isAdminMode.value = true
+  } else if (newPath.startsWith('/')) {
+    isAdminMode.value = false
+  }
+}, { immediate: true })
 
 const userName = computed(() => authStore.user?.username || '用户')
 const userRole = computed(() => authStore.user?.role === 'admin' ? '管理员' : '普通用户')
@@ -148,13 +134,18 @@ const isAdmin = computed(() => authStore.user?.role === 'admin')
 const balance = computed(() => authStore.user?.balance ?? null)
 const isSimpleMode = computed(() => authStore.isSimpleMode)
 
+// 当前显示的导航菜单
+const currentNav = computed(() => {
+  return isAdminMode.value ? adminNav : userNav
+})
+
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
     '/dashboard': '工作台',
     '/keys': '密钥管理',
     '/usage': '用量统计',
     '/profile': '个人设置',
-    '/subscriptions': '订阅管理',
+    '/subscriptions': '费用管理',
     '/purchase': '购买套餐',
     '/orders': '订单列表',
     '/redeem': '兑换码',
@@ -184,7 +175,7 @@ const pageSubtitle = computed(() => {
     '/keys': '创建和管理 API 密钥',
     '/usage': '查看详细的用量记录',
     '/profile': '管理账户信息和安全设置',
-    '/subscriptions': '查看订阅状态',
+    '/subscriptions': '管理订阅套餐和购买新套餐',
     '/purchase': '购买或续订套餐',
     '/orders': '查看订单历史',
     '/redeem': '兑换优惠码',
@@ -211,9 +202,9 @@ const pageSubtitle = computed(() => {
 const userNav = [
   { to: '/dashboard', label: '工作台', icon: '📊' },
   { to: '/keys', label: '密钥管理', icon: '🔑' },
-  { to: '/usage', label: '用量统计', icon: '📈' },
-  { to: '/subscriptions', label: '订阅管理', icon: '💳' },
-  { to: '/purchase', label: '购买套餐', icon: '🛒' },
+  // { to: '/usage', label: '用量统计', icon: '📈' },
+  { to: '/subscriptions', label: '费用管理', icon: '💳' },
+  // { to: '/purchase', label: '购买套餐', icon: '🛒' },
   { to: '/orders', label: '订单列表', icon: '📦' },
   { to: '/redeem', label: '兑换码', icon: '🎁' },
   { to: '/profile', label: '个人设置', icon: '⚙️' },
@@ -247,8 +238,28 @@ const formatBalance = (b: number) =>
     maximumFractionDigits: 2,
   }).format(b)
 
+const toggleMode = () => {
+  if (isAdminMode.value) {
+    // 切换到用户模式
+    isAdminMode.value = false
+    router.push('/dashboard')
+  } else {
+    // 切换到管理模式
+    isAdminMode.value = true
+    router.push('/admin/dashboard')
+  }
+}
+
 const handleLogout = async () => {
-  if (confirm('确定要退出登录吗？')) {
+  const confirmed = await confirm({
+    type: 'warning',
+    title: '确认退出',
+    message: '确定要退出登录吗？',
+    confirmText: '退出',
+    cancelText: '取消'
+  })
+
+  if (confirmed) {
     await authStore.logout()
     router.push('/login')
   }

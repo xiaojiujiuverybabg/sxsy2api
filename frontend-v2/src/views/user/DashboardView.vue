@@ -9,12 +9,12 @@
     </div>
 
     <!-- Main Content -->
-    <div v-else-if="stats" class="p-6">
-      <div class="mx-auto max-w-[1920px]">
+    <div v-else-if="stats" class="h-full p-6">
+      <div class="h-full">
         <!-- 左右分栏布局 -->
-        <div class="grid gap-6 lg:grid-cols-3">
+        <div class="grid h-full gap-6 lg:grid-cols-3">
           <!-- 左侧：统计 + 图表 + 快速操作 (2/3) -->
-          <div class="space-y-6 lg:col-span-2">
+          <div class="space-y-6 overflow-y-auto lg:col-span-2">
             <!-- 统计卡片 - 4列 -->
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <!-- 余额 -->
@@ -154,7 +154,7 @@
             <!-- 快速操作 -->
             <div class="rounded-2xl border border-brand-500/20 bg-surface-card/60 p-6 backdrop-blur-xl">
               <h3 class="mb-4 text-lg font-black text-white">快速操作</h3>
-              <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <!-- 创建密钥 -->
                 <button
                   @click="$router.push('/keys')"
@@ -166,20 +166,6 @@
                   <div>
                     <p class="text-sm font-bold text-white">创建密钥</p>
                     <p class="mt-1 text-xs text-text-muted">生成访问密钥</p>
-                  </div>
-                </button>
-
-                <!-- 查看用量 -->
-                <button
-                  @click="$router.push('/usage')"
-                  class="group flex flex-col items-center gap-3 rounded-xl border border-white/5 bg-surface-card/40 p-4 text-center transition-all duration-200 hover:border-success-500/30 hover:bg-surface-card/60 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]"
-                >
-                  <div class="flex h-12 w-12 items-center justify-center rounded-lg border border-success-500/30 bg-success-500/20 transition-transform group-hover:scale-110">
-                    <span class="text-2xl">📊</span>
-                  </div>
-                  <div>
-                    <p class="text-sm font-bold text-white">查看用量</p>
-                    <p class="mt-1 text-xs text-text-muted">使用记录详情</p>
                   </div>
                 </button>
 
@@ -214,137 +200,70 @@
             </div>
           </div>
 
-          <!-- 右侧：使用记录 + 公告 (1/3) -->
-          <div class="flex flex-col gap-6">
-            <!-- 最近使用记录 -->
-            <div class="flex-1 rounded-2xl border border-brand-500/20 bg-surface-card/60 p-6 backdrop-blur-xl">
-              <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-lg font-black text-white">最近使用</h3>
-                <RouterLink
-                  to="/usage"
-                  class="text-xs font-bold text-brand-400 transition hover:text-brand-300"
-                >
-                  查看全部 →
-                </RouterLink>
-              </div>
-
-              <!-- 有数据 -->
-              <div v-if="recentUsage.length > 0" class="space-y-3">
-                <div
-                  v-for="log in recentUsage.slice(0, 10)"
-                  :key="log.id"
-                  class="rounded-lg border border-white/5 bg-surface-page/40 p-3 transition hover:bg-surface-page/60"
-                >
-                  <div class="mb-2 flex items-start justify-between gap-2">
-                    <code class="flex-1 truncate rounded bg-white/10 px-2 py-1 text-xs font-mono text-gold-400">{{ log.model || '-' }}</code>
-                    <span
-                      :class="[
-                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold',
-                        (log as any).status === 200
-                          ? 'border-success-500/30 bg-success-500/20 text-success-400'
-                          : 'border-error-500/30 bg-error-500/20 text-error-400'
-                      ]"
-                    >
-                      <span
-                        class="h-1.5 w-1.5 rounded-full"
-                        :class="[(log as any).status === 200 ? 'bg-success-400' : 'bg-error-400']"
-                      ></span>
-                      {{ (log as any).status || 200 }}
-                    </span>
-                  </div>
-                  <div class="flex items-center justify-between text-xs">
-                    <span class="text-text-secondary">
-                      {{ new Date(log.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) }}
-                    </span>
-                    <span class="font-mono text-white">${{ (log.actual_cost || 0).toFixed(4) }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 空状态 -->
-              <div v-else class="flex flex-col items-center justify-center py-12 text-center">
-                <div class="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5">
-                  <svg class="h-7 w-7 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
-                </div>
-                <h3 class="text-sm font-black text-white">暂无调用记录</h3>
-                <p class="mt-1 text-xs text-text-secondary">创建密钥后开始使用</p>
-              </div>
-            </div>
-
-            <!-- 最新公告 -->
-            <div class="flex-1 rounded-2xl border border-gold-500/20 bg-surface-card/60 p-6 backdrop-blur-xl">
-              <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-lg font-black text-white">最新公告</h3>
+          <!-- 右侧：用量统计 + 公告 (1/3) -->
+          <div class="flex flex-col gap-6 overflow-y-auto">
+            <!-- 用量统计 -->
+            <div class="overflow-hidden rounded-2xl border border-brand-500/20 bg-surface-card/60 backdrop-blur-xl" style="min-height: 700px;">
+              <div class="flex items-center justify-between border-b border-white/5 p-6">
+                <h3 class="text-lg font-black text-white">用量统计</h3>
                 <button
-                  @click="loadAnnouncements"
+                  @click="loadUsageData"
                   class="text-xs font-bold text-brand-400 transition hover:text-brand-300"
                 >
                   刷新
                 </button>
               </div>
 
-              <!-- 有数据 -->
-              <div v-if="announcements.length > 0" class="space-y-3">
-                <div
-                  v-for="announcement in announcements.slice(0, 5)"
-                  :key="announcement.id"
-                  class="rounded-lg border border-white/5 bg-surface-page/40 p-4 transition hover:bg-surface-page/60"
-                >
-                  <div class="mb-2 flex items-start justify-between gap-2">
-                    <h4 class="flex-1 text-sm font-bold text-white">{{ announcement.title }}</h4>
-                    <span
-                      v-if="announcement.is_pinned"
-                      class="inline-flex items-center rounded-full border border-brand-500/30 bg-brand-500/20 px-2 py-0.5 text-xs font-bold text-brand-400"
+              <!-- 筛选条件 -->
+              <div class="border-b border-white/5 p-4">
+                <div class="space-y-3">
+                  <div>
+                    <label class="mb-1 block text-xs font-bold text-text-muted">API 密钥</label>
+                    <select
+                      v-model="filterApiKeyId"
+                      @change="loadUsageData"
+                      class="w-full rounded-lg border border-white/10 bg-surface-card px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"
                     >
-                      置顶
-                    </span>
+                      <option value="">全部密钥</option>
+                      <option v-for="key in apiKeys" :key="key.id" :value="key.id">
+                        {{ key.name }}
+                      </option>
+                    </select>
                   </div>
-                  <p class="mb-2 line-clamp-2 text-xs text-text-secondary">{{ announcement.content }}</p>
-                  <div class="text-xs text-text-muted">
-                    {{ new Date(announcement.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) }}
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="mb-1 block text-xs font-bold text-text-muted">开始日期</label>
+                      <input
+                        v-model="usageStartDate"
+                        type="date"
+                        @change="loadUsageData"
+                        class="w-full rounded-lg border border-white/10 bg-surface-card px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label class="mb-1 block text-xs font-bold text-text-muted">结束日期</label>
+                      <input
+                        v-model="usageEndDate"
+                        type="date"
+                        @change="loadUsageData"
+                        class="w-full rounded-lg border border-white/10 bg-surface-card px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"
+                      />
+                    </div>
                   </div>
-                </div>
-              </div>
-
-              <!-- 空状态 -->
-              <div v-else class="flex flex-col items-center justify-center py-8 text-center">
-                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5">
-                  <svg class="h-6 w-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                </div>
-                <h3 class="text-sm font-black text-white">暂无公告</h3>
-                <p class="mt-1 text-xs text-text-secondary">敬请期待</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-            <!-- 统计卡片保持不变，已在上一步更新 -->
-
-            <!-- 右侧：使用记录 + 公告 (1/3) -->
-            <div class="flex flex-col gap-6">
-              <!-- 最近使用记录 -->
-              <div class="flex-1 rounded-2xl border border-brand-500/20 bg-surface-card/60 p-6 backdrop-blur-xl">
-                <div class="mb-4 flex items-center justify-between">
-                  <h3 class="text-lg font-black text-white">最近使用</h3>
-                  <RouterLink
-                    to="/usage"
-                    class="text-xs font-bold text-brand-400 transition hover:text-brand-300"
+                  <button
+                    @click="resetUsageFilters"
+                    class="w-full rounded-lg border border-white/10 bg-surface-card px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-brand-500/30 hover:text-white"
                   >
-                    查看全部 →
-                  </RouterLink>
+                    重置筛选
+                  </button>
                 </div>
+              </div>
 
+              <div class="overflow-y-auto p-6" style="max-height: 500px;">
                 <!-- 有数据 -->
-                <div v-if="recentUsage.length > 0" class="space-y-3">
+                <div v-if="usageLogs.length > 0" class="space-y-3">
                   <div
-                    v-for="log in recentUsage.slice(0, 10)"
+                    v-for="log in usageLogs.slice(0, 10)"
                     :key="log.id"
                     class="rounded-lg border border-white/5 bg-surface-page/40 p-3 transition hover:bg-surface-page/60"
                   >
@@ -352,7 +271,7 @@
                       <code class="flex-1 truncate rounded bg-white/10 px-2 py-1 text-xs font-mono text-gold-400">{{ log.model || '-' }}</code>
                       <span
                         :class="[
-                          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold',
+                          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold whitespace-nowrap',
                           (log as any).status === 200
                             ? 'border-success-500/30 bg-success-500/20 text-success-400'
                             : 'border-error-500/30 bg-error-500/20 text-error-400'
@@ -365,11 +284,21 @@
                         {{ (log as any).status || 200 }}
                       </span>
                     </div>
-                    <div class="flex items-center justify-between text-xs">
-                      <span class="text-text-secondary">
+                    <div class="mb-2 grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span class="text-text-muted">Tokens:</span>
+                        <span class="ml-1 font-mono text-white">{{ formatNumber(log.total_tokens || 0) }}</span>
+                      </div>
+                      <div>
+                        <span class="text-text-muted">耗时:</span>
+                        <span class="ml-1 font-mono text-white">{{ formatDuration(log.duration_ms || 0) }}</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 text-xs">
+                      <span class="truncate text-text-secondary">
                         {{ new Date(log.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) }}
                       </span>
-                      <span class="font-mono text-white">${{ (log.actual_cost || 0).toFixed(4) }}</span>
+                      <span class="whitespace-nowrap font-mono text-white">${{ (log.actual_cost || 0).toFixed(4) }}</span>
                     </div>
                   </div>
                 </div>
@@ -382,22 +311,24 @@
                     </svg>
                   </div>
                   <h3 class="text-sm font-black text-white">暂无调用记录</h3>
-                  <p class="mt-1 text-xs text-text-secondary">创建密钥后开始使用</p>
+                  <p class="mt-1 text-xs text-text-secondary">选定时间范围内没有记录</p>
                 </div>
               </div>
+            </div>
 
-              <!-- 最新公告 -->
-              <div class="flex-1 rounded-2xl border border-gold-500/20 bg-surface-card/60 p-6 backdrop-blur-xl">
-                <div class="mb-4 flex items-center justify-between">
-                  <h3 class="text-lg font-black text-white">最新公告</h3>
-                  <button
-                    @click="loadAnnouncements"
-                    class="text-xs font-bold text-brand-400 transition hover:text-brand-300"
-                  >
-                    刷新
-                  </button>
-                </div>
+            <!-- 最新公告 -->
+            <div class="overflow-hidden rounded-2xl border border-gold-500/20 bg-surface-card/60 backdrop-blur-xl" style="min-height: 400px;">
+              <div class="flex items-center justify-between border-b border-white/5 p-6">
+                <h3 class="text-lg font-black text-white">最新公告</h3>
+                <button
+                  @click="loadAnnouncements"
+                  class="text-xs font-bold text-brand-400 transition hover:text-brand-300"
+                >
+                  刷新
+                </button>
+              </div>
 
+              <div class="overflow-y-auto p-6" style="max-height: 320px;">
                 <!-- 有数据 -->
                 <div v-if="announcements.length > 0" class="space-y-3">
                   <div
@@ -409,7 +340,7 @@
                       <h4 class="flex-1 text-sm font-bold text-white">{{ announcement.title }}</h4>
                       <span
                         v-if="announcement.is_pinned"
-                        class="inline-flex items-center rounded-full border border-brand-500/30 bg-brand-500/20 px-2 py-0.5 text-xs font-bold text-brand-400"
+                        class="inline-flex items-center rounded-full border border-brand-500/30 bg-brand-500/20 px-2 py-0.5 text-xs font-bold text-brand-400 whitespace-nowrap"
                       >
                         置顶
                       </span>
@@ -433,6 +364,7 @@
                 </div>
               </div>
             </div>
+          </div>
         </div>
       </div>
     </div>
@@ -444,9 +376,11 @@ import { computed, onMounted, ref, watch, nextTick } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usageAPI } from '@/api/usage'
 import { announcementsAPI } from '@/api/announcements'
+import { keysAPI } from '@/api'
 import type { UserDashboardStats } from '@/api/usage'
-import type { UsageLog, UserAnnouncement } from '@/types'
+import type { UsageLog, UserAnnouncement, ApiKey } from '@/types'
 import { Chart, registerables } from 'chart.js'
+import { showInfo } from '@/utils/toast'
 
 Chart.register(...registerables)
 
@@ -456,8 +390,14 @@ const isSimpleMode = computed(() => authStore.isSimpleMode)
 
 const loading = ref(false)
 const stats = ref<UserDashboardStats | null>(null)
-const recentUsage = ref<UsageLog[]>([])
 const announcements = ref<UserAnnouncement[]>([])
+
+// 用量统计相关
+const usageLogs = ref<UsageLog[]>([])
+const apiKeys = ref<ApiKey[]>([])
+const filterApiKeyId = ref<number | string>('')
+const usageStartDate = ref(new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0])
+const usageEndDate = ref(new Date().toISOString().split('T')[0])
 
 // 图表相关
 const dateRange = ref('7')
@@ -497,10 +437,47 @@ const loadRecentUsage = async () => {
     const endDate = new Date().toISOString().split('T')[0]
     const startDate = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
     const res = await usageAPI.query({ start_date: startDate, end_date: endDate, page: 1, page_size: 10 })
-    recentUsage.value = res.items
+    usageLogs.value = res.items
   } catch (error) {
     console.error('加载最近用量失败:', error)
   }
+}
+
+// 加载用量统计数据
+const loadUsageData = async () => {
+  try {
+    const params: any = {
+      start_date: usageStartDate.value,
+      end_date: usageEndDate.value,
+      page: 1,
+      page_size: 20
+    }
+    if (filterApiKeyId.value) {
+      params.api_key_id = filterApiKeyId.value
+    }
+    const res = await usageAPI.query(params)
+    usageLogs.value = res.items
+  } catch (error) {
+    console.error('加载用量数据失败:', error)
+  }
+}
+
+// 加载 API 密钥列表
+const loadApiKeys = async () => {
+  try {
+    const data = await keysAPI.list()
+    apiKeys.value = data
+  } catch (error) {
+    console.error('加载密钥列表失败:', error)
+  }
+}
+
+// 重置用量筛选
+const resetUsageFilters = () => {
+  filterApiKeyId.value = ''
+  usageStartDate.value = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
+  usageEndDate.value = new Date().toISOString().split('T')[0]
+  loadUsageData()
 }
 
 const loadAnnouncements = async () => {
@@ -686,7 +663,7 @@ const renderModelsChart = () => {
 const handleInvite = () => {
   // TODO: 实现邀请好友功能
   // 可以跳转到邀请页面或显示邀请链接弹窗
-  alert('邀请好友功能开发中...')
+  showInfo('邀请好友功能开发中...', '提示')
 }
 
 const refreshAll = async () => {
@@ -694,7 +671,8 @@ const refreshAll = async () => {
   try {
     await Promise.all([
       loadStats(),
-      loadRecentUsage(),
+      loadApiKeys(),
+      loadUsageData(),
       loadAnnouncements(),
       loadTrendData(),
       loadModelsData()

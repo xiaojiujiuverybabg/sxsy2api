@@ -176,6 +176,7 @@ import {
   SmartTable,
   StatusPill,
 } from '@/components/atlas'
+import { showError } from '@/utils/toast'
 
 const loading = ref(false)
 const exporting = ref(false)
@@ -304,7 +305,7 @@ const exportUsage = async () => {
     downloadCSV(csv, `usage_${startDate.value}_${endDate.value}.csv`)
   } catch (error) {
     console.error('导出失败:', error)
-    alert('导出失败: ' + (error as Error).message)
+    showError('导出失败: ' + (error as Error).message)
   } finally {
     exporting.value = false
   }

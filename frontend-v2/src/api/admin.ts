@@ -99,6 +99,9 @@ export const adminAPI = {
       const { data } = await apiClient.put<AdminUser>(`/admin/users/${id}`, { status })
       return data
     },
+    recharge(id: number, data: { amount: number; remark?: string }) {
+      return apiClient.post(`/admin/users/${id}/recharge`, data)
+    },
   },
   groups: {
     list: (
@@ -140,6 +143,18 @@ export const adminAPI = {
   proxies: {
     list: (page = 1, pageSize = 20, filters?: Record<string, unknown>, options?: { signal?: AbortSignal }) =>
       listEndpoint<Proxy>('/admin/proxies', page, pageSize, filters, options),
+    create(data: Record<string, unknown>) {
+      return apiClient.post<Proxy>('/admin/proxies', data)
+    },
+    update(id: number, data: Record<string, unknown>) {
+      return apiClient.put<Proxy>(`/admin/proxies/${id}`, data)
+    },
+    delete(id: number) {
+      return apiClient.delete(`/admin/proxies/${id}`)
+    },
+    test(id: number) {
+      return apiClient.post(`/admin/proxies/${id}/test`)
+    },
   },
   subscriptions: {
     list: (page = 1, pageSize = 20, filters?: Record<string, unknown>, options?: { signal?: AbortSignal }) =>
@@ -164,6 +179,9 @@ export const adminAPI = {
       const { data } = await apiClient.get('/admin/settings')
       return data
     },
+    updateSettings(data: Record<string, unknown>) {
+      return apiClient.put('/admin/settings', data)
+    },
   },
   redeem: {
     list: (
@@ -176,10 +194,25 @@ export const adminAPI = {
       const { data } = await apiClient.get('/admin/redeem-codes/stats')
       return data
     },
+    generate(data: Record<string, unknown>) {
+      return apiClient.post('/admin/redeem-codes/generate', data)
+    },
+    delete(id: number) {
+      return apiClient.delete(`/admin/redeem-codes/${id}`)
+    },
   },
   promo: {
     list: (page = 1, pageSize = 20, filters?: Record<string, unknown>, options?: { signal?: AbortSignal }) =>
       listEndpoint<PromoCode>('/admin/promo-codes', page, pageSize, filters, options),
+    create(data: Record<string, unknown>) {
+      return apiClient.post<PromoCode>('/admin/promo-codes', data)
+    },
+    update(id: number, data: Record<string, unknown>) {
+      return apiClient.put<PromoCode>(`/admin/promo-codes/${id}`, data)
+    },
+    delete(id: number) {
+      return apiClient.delete(`/admin/promo-codes/${id}`)
+    },
   },
   announcements: {
     list: (page = 1, pageSize = 20, filters?: Record<string, unknown>, options?: { signal?: AbortSignal }) =>
@@ -189,6 +222,21 @@ export const adminAPI = {
           signal: options?.signal,
         })
         .then((response) => response.data),
+    async create(data: Record<string, unknown>): Promise<Announcement> {
+      const response = await apiClient.post<Announcement>('/admin/announcements', data)
+      return response.data
+    },
+    async update(id: number, data: Record<string, unknown>): Promise<Announcement> {
+      const response = await apiClient.put<Announcement>(`/admin/announcements/${id}`, data)
+      return response.data
+    },
+    async delete(id: number): Promise<void> {
+      await apiClient.delete(`/admin/announcements/${id}`)
+    },
+    async getReadStatus(id: number): Promise<BasePaginationResponse<any>> {
+      const response = await apiClient.get<BasePaginationResponse<any>>(`/admin/announcements/${id}/read-status`)
+      return response.data
+    },
   },
   payment: {
     getConfig() {
