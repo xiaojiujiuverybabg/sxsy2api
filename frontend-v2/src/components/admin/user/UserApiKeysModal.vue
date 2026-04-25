@@ -117,7 +117,9 @@ const loadKeys = async () => {
   loading.value = true
   try {
     const response = await adminAPI.users.getApiKeys(props.user.id)
-    keys.value = response
+    // apiClient 拦截器已经解包了 { code: 0, data: {...} }
+    // 所以 response 就是 { items: [], total: 1 }
+    keys.value = response.items || []
   } catch (error: any) {
     showError(error.response?.data?.error || '加载 API 密钥失败')
   } finally {

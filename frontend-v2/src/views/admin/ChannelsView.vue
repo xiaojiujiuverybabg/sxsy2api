@@ -48,8 +48,8 @@
           class="rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm text-white backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
         >
           <option value="">全部状态</option>
-          <option value="active">活跃</option>
-          <option value="disabled">禁用</option>
+          <option value="active">启用</option>
+          <option value="disabled">停用</option>
         </select>
       </div>
     </div>
@@ -69,13 +69,20 @@
         <table class="w-full">
           <thead class="border-b border-slate-700/50 bg-slate-900/50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">名称</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">描述</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">状态</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">分组数</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">定价规则</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">创建时间</th>
-              <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-400">操作</th>
+              <th
+                v-for="col in columns"
+                :key="col.key"
+                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                :class="col.sortable ? 'cursor-pointer select-none' : ''"
+                @click="col.sortable ? handleSort(col.key) : null"
+              >
+                <div class="flex items-center gap-1">
+                  {{ col.label }}
+                  <span v-if="sortState.sort_by === col.key" class="text-brand-400">
+                    {{ sortState.sort_order === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-700/30">
@@ -97,7 +104,7 @@
               <!-- 状态 -->
               <td class="px-4 py-3">
                 <button
-                  @click="toggleStatus(channel)"
+                  @click="toggleChannelStatus(channel)"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition"
                   :class="channel.status === 'active' ? 'bg-emerald-500' : 'bg-slate-600'"
                 >
@@ -110,21 +117,23 @@
 
               <!-- 分组数 -->
               <td class="px-4 py-3">
-                <span class="inline-flex items-center rounded-full bg-slate-700/50 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+                <span class="inline-flex items-center rounded-full bg-slate-700/50 px-2.5 py-0.5 text-xs font-medium text-slate-300"
+                >
                   {{ (channel.group_ids || []).length }} 个
                 </span>
               </td>
 
               <!-- 定价规则 -->
               <td class="px-4 py-3">
-                <span class="inline-flex items-center rounded-full bg-slate-700/50 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+                <span class="inline-flex items-center rounded-full bg-slate-700/50 px-2.5 py-0.5 text-xs font-medium text-slate-300"
+                >
                   {{ (channel.model_pricing || []).length }} 条
                 </span>
               </td>
 
               <!-- 创建时间 -->
               <td class="px-4 py-3">
-                <div class="text-sm text-slate-400">{{ formatDate(channel.created_at) }}</div>
+                <div class="text-sm text-slate-400">{{ formatDateTime(channel.created_at) }}</div>
               </td>
 
               <!-- 操作 -->
@@ -144,7 +153,7 @@
                     ✏️ 编辑
                   </button>
                   <button
-                    @click="confirmDelete(channel)"
+                    @click="handleDelete(channel)"
                     class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:border-red-500/50 hover:bg-red-500/10"
                   >
                     🗑️ 删除
@@ -193,204 +202,145 @@
       </div>
     </div>
 
-    <!-- 创建/编辑弹窗 -->
-    <div
-      v-if="showDialog"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      @click.self="closeDialog"
-    >
-      <div class="w-full max-w-2xl rounded-xl border border-slate-700/50 bg-slate-900 shadow-2xl">
-        <!-- 弹窗标题 -->
-        <div class="flex items-center justify-between border-b border-slate-700/50 px-6 py-4">
-          <h2 class="text-xl font-bold text-white">
-            {{ editingChannel ? '✏️ 编辑渠道' : '➕ 创建渠道' }}
-          </h2>
-          <button
-            @click="closeDialog"
-            class="text-slate-400 transition hover:text-white"
-          >
-            ✕
-          </button>
-        </div>
+    <!-- Channel Form Modal -->
+    <ChannelFormModal
+      :show="showDialog"
+      :channel="editingChannel"
+      :all-groups="allGroups"
+      :all-channels="allChannelsForConflict"
+      :web-search-global-enabled="webSearchGlobalEnabled"
+      @close="closeDialog"
+      @success="onFormSuccess"
+    />
 
-        <!-- 弹窗内容 -->
-        <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
-          <!-- 名称 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-slate-300">
-              名称 <span class="text-red-400">*</span>
-            </label>
-            <input
-              v-model="form.name"
-              type="text"
-              required
-              placeholder="输入渠道名称"
-              class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm text-white placeholder-slate-500 backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-            />
-          </div>
-
-          <!-- 描述 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-slate-300">描述</label>
-            <textarea
-              v-model="form.description"
-              rows="3"
-              placeholder="输入渠道描述（可选）"
-              class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm text-white placeholder-slate-500 backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-            ></textarea>
-          </div>
-
-          <!-- 状态（仅编辑时显示） -->
-          <div v-if="editingChannel">
-            <label class="mb-2 block text-sm font-medium text-slate-300">状态</label>
-            <select
-              v-model="form.status"
-              class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm text-white backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-            >
-              <option value="active">活跃</option>
-              <option value="disabled">禁用</option>
-            </select>
-          </div>
-
-          <!-- 提示信息 -->
-          <div class="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
-            <p class="text-xs text-blue-300">
-              💡 提示：完整的渠道配置（分组、定价规则、模型映射等）需要通过 API 或后台管理系统进行配置。
-            </p>
-          </div>
-
-          <!-- 按钮 -->
-          <div class="flex items-center justify-end gap-3 pt-4">
-            <button
-              type="button"
-              @click="closeDialog"
-              class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-800"
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              :disabled="submitting"
-              class="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:from-brand-600 hover:to-brand-700 disabled:opacity-50"
-            >
-              {{ submitting ? '提交中...' : (editingChannel ? '更新' : '创建') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 删除确认弹窗 -->
-    <div
-      v-if="showDeleteDialog"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      @click.self="showDeleteDialog = false"
-    >
-      <div class="w-full max-w-md rounded-xl border border-slate-700/50 bg-slate-900 shadow-2xl">
-        <div class="p-6">
-          <div class="mb-4 flex items-center justify-center">
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20">
-              <span class="text-2xl">⚠️</span>
-            </div>
-          </div>
-          <h3 class="mb-2 text-center text-lg font-bold text-white">确认删除</h3>
-          <p class="mb-6 text-center text-sm text-slate-400">
-            确定要删除渠道 <span class="font-medium text-white">{{ deletingChannel?.name }}</span> 吗？此操作无法撤销。
-          </p>
-          <div class="flex items-center gap-3">
-            <button
-              @click="showDeleteDialog = false"
-              class="flex-1 rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-800"
-            >
-              取消
-            </button>
-            <button
-              @click="handleDelete"
-              class="flex-1 rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-4 py-2 text-sm font-medium text-white transition hover:from-red-600 hover:to-red-700"
-            >
-              确认删除
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Delete Confirmation -->
+    <ConfirmDialog
+      :show="showDeleteDialog"
+      title="确认删除"
+      :message="deleteConfirmMessage"
+      @confirm="confirmDelete"
+      @cancel="showDeleteDialog = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { adminAPI } from '@/api/admin'
+import type { Channel, AdminGroup } from '@/types'
+import { formatDateTime, extractErrorMessage } from '@/utils/format'
+import { showSuccess, showError, confirm } from '@/utils/toast'
+import ChannelFormModal from '@/components/admin/channel/ChannelFormModal.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
-interface Channel {
-  id: number
-  name: string
-  description?: string
-  status: 'active' | 'disabled'
-  group_ids?: number[]
-  model_pricing?: unknown[]
-  created_at: string
+interface Column {
+  key: string
+  label: string
+  sortable: boolean
 }
 
-// 状态
+const columns: Column[] = [
+  { key: 'name', label: '名称', sortable: true },
+  { key: 'description', label: '描述', sortable: false },
+  { key: 'status', label: '状态', sortable: true },
+  { key: 'group_count', label: '分组', sortable: false },
+  { key: 'pricing_count', label: '定价规则', sortable: false },
+  { key: 'created_at', label: '创建时间', sortable: true },
+  { key: 'actions', label: '操作', sortable: false },
+]
+
+// ── State ───────────────────────────────────────────────
 const channels = ref<Channel[]>([])
 const loading = ref(false)
 const searchQuery = ref('')
-const filters = reactive({
-  status: '',
-})
+const filters = reactive({ status: '' })
 const pagination = reactive({
   page: 1,
   page_size: 20,
   total: 0,
 })
-
-// 弹窗状态
-const showDialog = ref(false)
-const showDeleteDialog = ref(false)
-const editingChannel = ref<Channel | null>(null)
-const deletingChannel = ref<Channel | null>(null)
-const submitting = ref(false)
-
-// 表单数据
-const form = reactive({
-  name: '',
-  description: '',
-  status: 'active' as 'active' | 'disabled',
+const sortState = reactive({
+  sort_by: 'created_at',
+  sort_order: 'desc' as 'asc' | 'desc',
 })
 
-// 计算属性
+const showDialog = ref(false)
+const editingChannel = ref<Channel | null>(null)
+const showDeleteDialog = ref(false)
+const deletingChannel = ref<Channel | null>(null)
+
+const allGroups = ref<AdminGroup[]>([])
+const allChannelsForConflict = ref<Channel[]>([])
+const webSearchGlobalEnabled = ref(false)
+
+let abortController: AbortController | null = null
+let searchTimeout: ReturnType<typeof setTimeout>
+
+// ── Computed ────────────────────────────────────────────
 const totalPages = computed(() => Math.ceil(pagination.total / pagination.page_size))
 
-// 格式化日期
-function formatDate(dateString: string): string {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
-}
+const deleteConfirmMessage = computed(() => {
+  const name = deletingChannel.value?.name || ''
+  return `确定要删除渠道 "${name}" 吗？此操作无法撤销。`
+})
 
-// 加载渠道列表
+// ── Data loading ────────────────────────────────────────
 async function loadChannels() {
+  if (abortController) abortController.abort()
+  const ctrl = new AbortController()
+  abortController = ctrl
   loading.value = true
+
   try {
     const response = await adminAPI.channels.list(pagination.page, pagination.page_size, {
       status: filters.status || undefined,
       search: searchQuery.value || undefined,
-    })
-    channels.value = response.items as Channel[]
+      sort_by: sortState.sort_by,
+      sort_order: sortState.sort_order,
+    }, { signal: ctrl.signal })
+
+    if (ctrl.signal.aborted || abortController !== ctrl) return
+    channels.value = response.items || []
     pagination.total = response.total
-  } catch (error) {
-    console.error('加载渠道列表失败:', error)
+  } catch (error: unknown) {
+    const e = error as { name?: string; code?: string }
+    if (e?.name === 'AbortError' || e?.code === 'ERR_CANCELED') return
+    showError(extractErrorMessage(error, '加载渠道列表失败'))
   } finally {
-    loading.value = false
+    if (abortController === ctrl) {
+      loading.value = false
+      abortController = null
+    }
   }
 }
 
-// 搜索处理
-let searchTimeout: ReturnType<typeof setTimeout>
+async function loadGroups() {
+  try {
+    allGroups.value = await adminAPI.groups.getAll()
+  } catch (error) {
+    console.error('Error loading groups:', error)
+  }
+}
+
+async function loadAllChannelsForConflict() {
+  try {
+    const response = await adminAPI.channels.list(1, 1000)
+    allChannelsForConflict.value = response.items || []
+  } catch (error) {
+    allChannelsForConflict.value = channels.value
+  }
+}
+
+async function loadWebSearchGlobalState() {
+  try {
+    const cfg = await adminAPI.settings.getWebSearchEmulationConfig()
+    webSearchGlobalEnabled.value = cfg?.enabled === true && (cfg?.providers?.length ?? 0) > 0
+  } catch {
+    webSearchGlobalEnabled.value = false
+  }
+}
+
+// ── Search / Filter / Pagination ────────────────────────
 function handleSearch() {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
@@ -399,108 +349,99 @@ function handleSearch() {
   }, 300)
 }
 
-// 应用筛选
 function applyFilters() {
   pagination.page = 1
   loadChannels()
 }
 
-// 分页
 function goToPage(page: number) {
   if (page < 1 || page > totalPages.value) return
   pagination.page = page
   loadChannels()
 }
 
-// 切换状态
-async function toggleStatus(channel: Channel) {
-  try {
-    const newStatus = channel.status === 'active' ? 'disabled' : 'active'
-    // 注意：这里需要实际的 API 支持
-    console.log('切换状态:', channel.id, newStatus)
-    channel.status = newStatus
-  } catch (error) {
-    console.error('切换状态失败:', error)
+function handleSort(key: string) {
+  if (sortState.sort_by === key) {
+    sortState.sort_order = sortState.sort_order === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortState.sort_by = key
+    sortState.sort_order = 'asc'
   }
+  pagination.page = 1
+  loadChannels()
 }
 
-// 测试渠道
-function testChannel(channel: Channel) {
-  console.log('测试渠道:', channel)
-  alert(`测试渠道: ${channel.name}\n\n此功能需要后端 API 支持`)
-}
-
-// 打开创建弹窗
-function openCreateDialog() {
+// ── Dialog ──────────────────────────────────────────────
+async function openCreateDialog() {
   editingChannel.value = null
-  form.name = ''
-  form.description = ''
-  form.status = 'active'
+  await Promise.all([loadGroups(), loadAllChannelsForConflict()])
   showDialog.value = true
 }
 
-// 打开编辑弹窗
-function openEditDialog(channel: Channel) {
+async function openEditDialog(channel: Channel) {
   editingChannel.value = channel
-  form.name = channel.name
-  form.description = channel.description || ''
-  form.status = channel.status
+  await Promise.all([loadGroups(), loadAllChannelsForConflict()])
   showDialog.value = true
 }
 
-// 关闭弹窗
 function closeDialog() {
   showDialog.value = false
   editingChannel.value = null
 }
 
-// 提交表单
-async function handleSubmit() {
-  if (!form.name.trim()) {
-    alert('请输入渠道名称')
-    return
-  }
+function onFormSuccess() {
+  loadChannels()
+}
 
-  submitting.value = true
+// ── Toggle status ───────────────────────────────────────
+async function toggleChannelStatus(channel: Channel) {
+  const newStatus = channel.status === 'active' ? 'disabled' : 'active'
   try {
-    // 注意：这里需要实际的 API 支持
-    console.log('提交表单:', form)
-    alert(`${editingChannel.value ? '更新' : '创建'}渠道成功！\n\n此功能需要后端 API 支持`)
-    closeDialog()
-    loadChannels()
+    await adminAPI.channels.update(channel.id, { status: newStatus })
+    if (filters.status && filters.status !== newStatus) {
+      await loadChannels()
+    } else {
+      channel.status = newStatus
+    }
+    showSuccess('状态已更新')
   } catch (error) {
-    console.error('提交失败:', error)
-    alert('操作失败，请重试')
-  } finally {
-    submitting.value = false
+    showError(extractErrorMessage(error, '更新状态失败'))
   }
 }
 
-// 确认删除
-function confirmDelete(channel: Channel) {
+// ── Test ────────────────────────────────────────────────
+function testChannel(channel: Channel) {
+  confirm(`测试渠道: ${channel.name}\n\n此功能暂未实现`)
+}
+
+// ── Delete ──────────────────────────────────────────────
+function handleDelete(channel: Channel) {
   deletingChannel.value = channel
   showDeleteDialog.value = true
 }
 
-// 执行删除
-async function handleDelete() {
+async function confirmDelete() {
   if (!deletingChannel.value) return
-
   try {
-    // 注意：这里需要实际的 API 支持
-    console.log('删除渠道:', deletingChannel.value.id)
-    alert(`删除渠道成功！\n\n此功能需要后端 API 支持`)
+    await adminAPI.channels.delete(deletingChannel.value.id)
+    showSuccess('渠道已删除')
     showDeleteDialog.value = false
     deletingChannel.value = null
     loadChannels()
   } catch (error) {
-    console.error('删除失败:', error)
-    alert('删除失败，请重试')
+    showError(extractErrorMessage(error, '删除渠道失败'))
   }
 }
 
-// 初始化
+// ── Lifecycle ───────────────────────────────────────────
 onMounted(() => {
   loadChannels()
+  loadGroups()
+  loadWebSearchGlobalState()
+})
+
+onUnmounted(() => {
+  clearTimeout(searchTimeout)
+  abortController?.abort()
 })
 </script>

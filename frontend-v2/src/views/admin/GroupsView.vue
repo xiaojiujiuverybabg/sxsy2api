@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-bold text-white">📦 分组管理</h1>
-          <p class="mt-2 text-sm text-slate-400">管理模型分组和访问权限</p>
+          <p class="mt-2 text-sm text-slate-400">管理模型分组、账号分配和访问权限</p>
         </div>
         <div class="flex items-center gap-3">
           <button
@@ -17,7 +17,13 @@
             <span v-else>🔄 刷新</span>
           </button>
           <button
-            @click="openCreateDialog"
+            @click="openSortModal"
+            class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800"
+          >
+            🔀 排序
+          </button>
+          <button
+            @click="openCreateModal"
             class="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:from-brand-600 hover:to-brand-700"
           >
             ➕ 创建分组
@@ -47,11 +53,11 @@
           @change="applyFilters"
           class="rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm text-white backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
         >
-          <option value="">全部平台</option>
-          <option value="openai">OpenAI</option>
-          <option value="anthropic">Anthropic</option>
-          <option value="gemini">Gemini</option>
-          <option value="antigravity">Antigravity</option>
+          <option value="" class="bg-slate-800 text-white">全部平台</option>
+          <option value="openai" class="bg-slate-800 text-white">OpenAI</option>
+          <option value="anthropic" class="bg-slate-800 text-white">Anthropic</option>
+          <option value="gemini" class="bg-slate-800 text-white">Gemini</option>
+          <option value="antigravity" class="bg-slate-800 text-white">Antigravity</option>
         </select>
 
         <!-- 状态筛选 -->
@@ -60,9 +66,9 @@
           @change="applyFilters"
           class="rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm text-white backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
         >
-          <option value="">全部状态</option>
-          <option value="active">活跃</option>
-          <option value="inactive">禁用</option>
+          <option value="" class="bg-slate-800 text-white">全部状态</option>
+          <option value="active" class="bg-slate-800 text-white">活跃</option>
+          <option value="inactive" class="bg-slate-800 text-white">禁用</option>
         </select>
 
         <!-- 独占筛选 -->
@@ -71,9 +77,20 @@
           @change="applyFilters"
           class="rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm text-white backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
         >
-          <option value="">全部分组</option>
-          <option value="true">独占分组</option>
-          <option value="false">公共分组</option>
+          <option value="" class="bg-slate-800 text-white">全部分组</option>
+          <option value="true" class="bg-slate-800 text-white">独占分组</option>
+          <option value="false" class="bg-slate-800 text-white">公共分组</option>
+        </select>
+
+        <!-- 订阅类型筛选 -->
+        <select
+          v-model="filters.subscription_type"
+          @change="applyFilters"
+          class="rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm text-white backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+        >
+          <option value="" class="bg-slate-800 text-white">全部类型</option>
+          <option value="standard" class="bg-slate-800 text-white">标准计费</option>
+          <option value="subscription" class="bg-slate-800 text-white">订阅制</option>
         </select>
       </div>
     </div>
@@ -95,10 +112,13 @@
             <tr>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">名称</th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">平台</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">类型</th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">状态</th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">独占</th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">账户数</th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">倍率</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">用量</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">订阅限额</th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">创建时间</th>
               <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-400">操作</th>
             </tr>
@@ -127,6 +147,20 @@
                   ]"
                 >
                   {{ platformNames[group.platform] || group.platform }}
+                </span>
+              </td>
+
+              <!-- 订阅类型 -->
+              <td class="px-4 py-3">
+                <span
+                  :class="[
+                    'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                    group.subscription_type === 'subscription'
+                      ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                      : 'bg-slate-700/50 text-slate-300'
+                  ]"
+                >
+                  {{ group.subscription_type === 'subscription' ? '订阅制' : '标准' }}
                 </span>
               </td>
 
@@ -169,6 +203,34 @@
                 <span class="text-sm font-medium text-slate-300">{{ group.rate_multiplier }}x</span>
               </td>
 
+              <!-- 用量 -->
+              <td class="px-4 py-3">
+                <div v-if="usageLoading" class="text-xs text-slate-500">加载中...</div>
+                <div v-else class="space-y-0.5 text-xs">
+                  <div class="text-slate-400">
+                    <span class="text-slate-500">今日:</span>
+                    <span class="ml-1 font-medium text-slate-300">${{ formatCost(usageMap.get(group.id)?.today_cost ?? 0) }}</span>
+                  </div>
+                  <div class="text-slate-400">
+                    <span class="text-slate-500">总计:</span>
+                    <span class="ml-1 font-medium text-slate-300">${{ formatCost(usageMap.get(group.id)?.total_cost ?? 0) }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- 订阅限额 -->
+              <td class="px-4 py-3">
+                <div v-if="group.subscription_type === 'subscription'" class="text-xs text-slate-400">
+                  <div v-if="group.daily_limit_usd">日: ${{ group.daily_limit_usd }}</div>
+                  <div v-if="group.weekly_limit_usd">周: ${{ group.weekly_limit_usd }}</div>
+                  <div v-if="group.monthly_limit_usd">月: ${{ group.monthly_limit_usd }}</div>
+                  <div v-if="!group.daily_limit_usd && !group.weekly_limit_usd && !group.monthly_limit_usd" class="text-slate-500">
+                    无限制
+                  </div>
+                </div>
+                <span v-else class="text-xs text-slate-500">-</span>
+              </td>
+
               <!-- 创建时间 -->
               <td class="px-4 py-3">
                 <div class="text-sm text-slate-400">{{ formatDate(group.created_at) }}</div>
@@ -178,7 +240,14 @@
               <td class="px-4 py-3">
                 <div class="flex items-center justify-end gap-2">
                   <button
-                    @click="openEditDialog(group)"
+                    @click="openRateMultipliersModal(group)"
+                    class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-purple-400 transition hover:border-purple-500/50 hover:bg-purple-500/10"
+                    title="费率倍率"
+                  >
+                    💰 倍率
+                  </button>
+                  <button
+                    @click="openEditModal(group)"
                     class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-blue-400 transition hover:border-blue-500/50 hover:bg-blue-500/10"
                   >
                     ✏️ 编辑
@@ -230,130 +299,71 @@
     </div>
 
     <!-- 创建/编辑弹窗 -->
-    <div
-      v-if="showDialog"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      @click.self="closeDialog"
-    >
-      <div class="w-full max-w-lg rounded-2xl border border-slate-700/50 bg-slate-800/95 p-6 backdrop-blur-xl shadow-2xl">
-        <h2 class="mb-6 text-xl font-bold text-white">
-          {{ editingGroup ? '✏️ 编辑分组' : '➕ 创建分组' }}
-        </h2>
+    <GroupFormModal
+      :show="showFormModal"
+      :group="editingGroup"
+      :available-groups="groups"
+      @close="closeFormModal"
+      @submit="handleFormSubmit"
+    />
 
-        <div class="space-y-4">
-          <!-- 名称 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-slate-300">分组名称</label>
-            <input
-              v-model="formData.name"
-              type="text"
-              placeholder="输入分组名称"
-              class="w-full rounded-lg border border-slate-700/50 bg-slate-900/50 px-4 py-2 text-sm text-white placeholder-slate-500 backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-            />
-          </div>
+    <!-- 费率倍率管理弹窗 -->
+    <GroupRateMultipliersModal
+      :show="showRateMultipliersModal"
+      :group="rateMultipliersGroup"
+      @close="closeRateMultipliersModal"
+      @save="handleSaveRateMultipliers"
+    />
 
-          <!-- 平台 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-slate-300">平台</label>
-            <select
-              v-model="formData.platform"
-              class="w-full rounded-lg border border-slate-700/50 bg-slate-900/50 px-4 py-2 text-sm text-white backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-            >
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-              <option value="gemini">Gemini</option>
-              <option value="antigravity">Antigravity</option>
-            </select>
-          </div>
-
-          <!-- 描述 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-slate-300">描述（可选）</label>
-            <textarea
-              v-model="formData.description"
-              placeholder="输入分组描述"
-              rows="3"
-              class="w-full rounded-lg border border-slate-700/50 bg-slate-900/50 px-4 py-2 text-sm text-white placeholder-slate-500 backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-            ></textarea>
-          </div>
-
-          <!-- 倍率 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-slate-300">倍率</label>
-            <input
-              v-model.number="formData.rate_multiplier"
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="1.0"
-              class="w-full rounded-lg border border-slate-700/50 bg-slate-900/50 px-4 py-2 text-sm text-white placeholder-slate-500 backdrop-blur-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-            />
-          </div>
-
-          <!-- 独占 -->
-          <div class="flex items-center gap-3">
-            <input
-              v-model="formData.is_exclusive"
-              type="checkbox"
-              id="is_exclusive"
-              class="h-4 w-4 rounded border-slate-700/50 bg-slate-900/50 text-brand-500 focus:ring-2 focus:ring-brand-500/20"
-            />
-            <label for="is_exclusive" class="text-sm font-medium text-slate-300">独占分组</label>
-          </div>
-        </div>
-
-        <!-- 按钮 -->
-        <div class="mt-6 flex items-center justify-end gap-3">
-          <button
-            @click="closeDialog"
-            class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-800"
-          >
-            取消
-          </button>
-          <button
-            @click="saveGroup"
-            :disabled="saving || !formData.name"
-            class="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:from-brand-600 hover:to-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {{ saving ? '保存中...' : '保存' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- 排序弹窗 -->
+    <GroupSortModal
+      :show="showSortModal"
+      :groups="groups"
+      @close="closeSortModal"
+      @save="handleSaveSort"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { adminAPI } from '@/api'
 import type { AdminGroup, GroupPlatform } from '@/types'
+import GroupFormModal from '@/components/admin/group/GroupFormModal.vue'
+import GroupRateMultipliersModal from '@/components/admin/group/GroupRateMultipliersModal.vue'
+import GroupSortModal from '@/components/admin/group/GroupSortModal.vue'
+import { showSuccess, showError, confirm } from '@/utils/toast'
 
 const loading = ref(false)
-const saving = ref(false)
 const groups = ref<AdminGroup[]>([])
 const searchQuery = ref('')
-const filters = ref<{
-  platform?: GroupPlatform
-  status?: 'active' | 'inactive'
+const filters = reactive<{
+  platform?: GroupPlatform | ''
+  status?: 'active' | 'inactive' | ''
   is_exclusive?: string
-}>({})
+  subscription_type?: string
+}>({
+  platform: '',
+  status: '',
+  is_exclusive: '',
+  subscription_type: ''
+})
 
-const pagination = ref({
+const usageLoading = ref(false)
+const usageMap = ref<Map<number, { today_cost: number; total_cost: number }>>(new Map())
+
+const pagination = reactive({
   page: 1,
   page_size: 20,
   total: 0,
   pages: 0
 })
 
-const showDialog = ref(false)
+const showFormModal = ref(false)
+const showRateMultipliersModal = ref(false)
+const showSortModal = ref(false)
 const editingGroup = ref<AdminGroup | null>(null)
-const formData = ref({
-  name: '',
-  platform: 'openai' as GroupPlatform,
-  description: '',
-  rate_multiplier: 1,
-  is_exclusive: false
-})
+const rateMultipliersGroup = ref<AdminGroup | null>(null)
 
 const platformNames: Record<string, string> = {
   openai: 'OpenAI',
@@ -368,27 +378,29 @@ const loadGroups = async () => {
   loading.value = true
   try {
     const filterParams: any = {}
-    if (filters.value.platform) filterParams.platform = filters.value.platform
-    if (filters.value.status) filterParams.status = filters.value.status
-    if (filters.value.is_exclusive) filterParams.is_exclusive = filters.value.is_exclusive === 'true'
+    if (filters.platform) filterParams.platform = filters.platform
+    if (filters.status) filterParams.status = filters.status
+    if (filters.is_exclusive) filterParams.is_exclusive = filters.is_exclusive === 'true'
+    if (filters.subscription_type) filterParams.subscription_type = filters.subscription_type
     if (searchQuery.value) filterParams.search = searchQuery.value
 
     const response = await adminAPI.groups.list(
-      pagination.value.page,
-      pagination.value.page_size,
+      pagination.page,
+      pagination.page_size,
       filterParams
     )
 
     groups.value = response.items
-    pagination.value = {
-      page: response.page,
-      page_size: response.page_size,
-      total: response.total,
-      pages: response.pages
-    }
-  } catch (error) {
+    pagination.page = response.page
+    pagination.page_size = response.page_size
+    pagination.total = response.total
+    pagination.pages = response.pages
+
+    // 加载用量数据
+    loadGroupsUsage()
+  } catch (error: any) {
     console.error('加载分组失败:', error)
-    alert('加载分组失败，请重试')
+    showError(error.response?.data?.message || '加载分组失败')
   } finally {
     loading.value = false
   }
@@ -397,70 +409,51 @@ const loadGroups = async () => {
 const handleSearch = () => {
   if (searchTimeout) clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
-    pagination.value.page = 1
+    pagination.page = 1
     loadGroups()
   }, 300)
 }
 
 const applyFilters = () => {
-  pagination.value.page = 1
+  pagination.page = 1
   loadGroups()
 }
 
 const goToPage = (page: number) => {
-  if (page < 1 || page > pagination.value.pages) return
-  pagination.value.page = page
+  if (page < 1 || page > pagination.pages) return
+  pagination.page = page
   loadGroups()
 }
 
-const openCreateDialog = () => {
+const openCreateModal = () => {
   editingGroup.value = null
-  formData.value = {
-    name: '',
-    platform: 'openai',
-    description: '',
-    rate_multiplier: 1,
-    is_exclusive: false
-  }
-  showDialog.value = true
+  showFormModal.value = true
 }
 
-const openEditDialog = (group: AdminGroup) => {
+const openEditModal = (group: AdminGroup) => {
   editingGroup.value = group
-  formData.value = {
-    name: group.name,
-    platform: group.platform,
-    description: group.description || '',
-    rate_multiplier: group.rate_multiplier,
-    is_exclusive: group.is_exclusive
-  }
-  showDialog.value = true
+  showFormModal.value = true
 }
 
-const closeDialog = () => {
-  showDialog.value = false
+const closeFormModal = () => {
+  showFormModal.value = false
   editingGroup.value = null
 }
 
-const saveGroup = async () => {
-  if (!formData.value.name) {
-    alert('请输入分组名称')
-    return
-  }
-
-  saving.value = true
+const handleFormSubmit = async (data: any) => {
   try {
-    // 注意：这里需要根据实际 API 实现调整
-    // 目前 adminAPI.groups 只有 list, getAll, toggleStatus
-    // 实际的创建和更新接口需要补充
-    alert('保存功能需要后端 API 支持')
-    closeDialog()
+    if (editingGroup.value) {
+      await adminAPI.groups.update(editingGroup.value.id, data)
+      showSuccess('更新成功')
+    } else {
+      await adminAPI.groups.create(data)
+      showSuccess('创建成功')
+    }
+    closeFormModal()
     loadGroups()
-  } catch (error) {
+  } catch (error: any) {
     console.error('保存分组失败:', error)
-    alert('保存分组失败，请重试')
-  } finally {
-    saving.value = false
+    showError(error.response?.data?.message || '保存分组失败')
   }
 }
 
@@ -469,26 +462,77 @@ const toggleStatus = async (group: AdminGroup) => {
     const newStatus = group.status === 'active' ? 'inactive' : 'active'
     await adminAPI.groups.toggleStatus(group.id, newStatus)
     group.status = newStatus
-  } catch (error) {
+    showSuccess('状态切换成功')
+  } catch (error: any) {
     console.error('切换状态失败:', error)
-    alert('切换状态失败，请重试')
+    showError(error.response?.data?.message || '切换状态失败')
   }
 }
 
-const confirmDelete = (group: AdminGroup) => {
-  if (confirm(`确定要删除分组"${group.name}"吗？此操作不可恢复。`)) {
+const confirmDelete = async (group: AdminGroup) => {
+  const confirmed = await confirm({
+    type: 'danger',
+    title: '确认删除',
+    message: `确定要删除分组"${group.name}"吗？此操作不可恢复。`,
+    confirmText: '删除',
+    cancelText: '取消'
+  })
+
+  if (confirmed) {
     deleteGroup(group)
   }
 }
 
 const deleteGroup = async (group: AdminGroup) => {
   try {
-    // 注意：需要后端 API 支持
-    alert('删除功能需要后端 API 支持')
+    await adminAPI.groups.delete(group.id)
+    showSuccess('删除成功')
     loadGroups()
-  } catch (error) {
+  } catch (error: any) {
     console.error('删除分组失败:', error)
-    alert('删除分组失败，请重试')
+    showError(error.response?.data?.message || '删除分组失败')
+  }
+}
+
+const openRateMultipliersModal = (group: AdminGroup) => {
+  rateMultipliersGroup.value = group
+  showRateMultipliersModal.value = true
+}
+
+const closeRateMultipliersModal = () => {
+  showRateMultipliersModal.value = false
+  rateMultipliersGroup.value = null
+}
+
+const handleSaveRateMultipliers = async (data: any) => {
+  try {
+    await adminAPI.groups.batchSetGroupRateMultipliers(data.groupId, data.entries)
+    showSuccess('费率倍率保存成功')
+    closeRateMultipliersModal()
+  } catch (error: any) {
+    console.error('保存费率倍率失败:', error)
+    showError(error.response?.data?.message || '保存费率倍率失败')
+  }
+}
+
+const openSortModal = () => {
+  showSortModal.value = true
+}
+
+const closeSortModal = () => {
+  showSortModal.value = false
+}
+
+const handleSaveSort = async (sortedIds: number[]) => {
+  try {
+    const updates = sortedIds.map((id, index) => ({ id, sort_order: index + 1 }))
+    await adminAPI.groups.updateSortOrder(updates)
+    showSuccess('排序保存成功')
+    closeSortModal()
+    loadGroups()
+  } catch (error: any) {
+    console.error('保存排序失败:', error)
+    showError(error.response?.data?.message || '保存排序失败')
   }
 }
 
@@ -501,6 +545,32 @@ const formatDate = (dateString: string) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+const formatCost = (cost: number) => {
+  return cost.toFixed(4)
+}
+
+const loadGroupsUsage = async () => {
+  if (groups.value.length === 0) return
+
+  usageLoading.value = true
+  try {
+    const usageData = await adminAPI.groups.getUsageSummary()
+    const newMap = new Map<number, { today_cost: number; total_cost: number }>()
+    usageData.forEach(item => {
+      newMap.set(item.group_id, {
+        today_cost: item.today_cost,
+        total_cost: item.total_cost
+      })
+    })
+    usageMap.value = newMap
+  } catch (error: any) {
+    console.error('加载用量失败:', error)
+    // 静默失败，不影响主要功能
+  } finally {
+    usageLoading.value = false
+  }
 }
 
 onMounted(() => {

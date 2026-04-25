@@ -890,3 +890,4 @@ export interface InstallResponse {
 }
 
 export type { CheckoutInfoResponse, CreateOrderRequest, CreateOrderResult, PaymentChannel, PaymentConfig, PaymentDashboardStats, PaymentOrder, ProviderInstance, SubscriptionPlan } from './payment'
+export * from './channels'

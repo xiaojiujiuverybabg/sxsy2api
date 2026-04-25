@@ -7,14 +7,22 @@
           <h1 class="text-3xl font-bold text-white">👥 用户管理</h1>
           <p class="mt-2 text-sm text-slate-400">管理系统用户和权限</p>
         </div>
-        <button
-          @click="loadUsers"
-          :disabled="loading"
-          class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800 disabled:opacity-50"
-        >
-          <span v-if="loading">🔄 加载中...</span>
-          <span v-else>🔄 刷新</span>
-        </button>
+        <div class="flex items-center gap-3">
+          <button
+            @click="loadUsers"
+            :disabled="loading"
+            class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800 disabled:opacity-50"
+          >
+            <span v-if="loading">🔄 加载中...</span>
+            <span v-else>🔄 刷新</span>
+          </button>
+          <button
+            @click="showCreateModal = true"
+            class="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-brand-500/30 transition hover:shadow-brand-500/50"
+          >
+            ➕ 创建用户
+          </button>
+        </div>
       </div>
     </div>
 
@@ -77,6 +85,8 @@
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">角色</th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">状态</th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">余额</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">订阅</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">并发数</th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">注册时间</th>
               <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-400">操作</th>
             </tr>
@@ -136,7 +146,44 @@
 
               <!-- 余额 -->
               <td class="px-4 py-3">
-                <span class="text-sm font-medium text-emerald-400">${{ user.balance.toFixed(2) }}</span>
+                <button
+                  @click="handleBalanceHistory(user)"
+                  class="text-sm font-medium text-emerald-400 underline decoration-dashed underline-offset-2 hover:text-emerald-300 transition"
+                  title="查看余额历史"
+                >
+                  ${{ user.balance.toFixed(2) }}
+                </button>
+              </td>
+
+              <!-- 订阅 -->
+              <td class="px-4 py-3">
+                <div v-if="user.subscriptions && user.subscriptions.length > 0" class="flex flex-wrap gap-1">
+                  <span
+                    v-for="sub in user.subscriptions.slice(0, 2)"
+                    :key="sub.id"
+                    :class="[
+                      'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                      sub.status === 'active'
+                        ? 'bg-emerald-500/20 text-emerald-300'
+                        : 'bg-slate-700/50 text-slate-400'
+                    ]"
+                    :title="sub.group?.name"
+                  >
+                    {{ sub.group?.name || `#${sub.group_id}` }}
+                  </span>
+                  <span
+                    v-if="user.subscriptions.length > 2"
+                    class="inline-flex items-center rounded-full bg-slate-700/50 px-2 py-0.5 text-xs font-medium text-slate-400"
+                  >
+                    +{{ user.subscriptions.length - 2 }}
+                  </span>
+                </div>
+                <span v-else class="text-xs text-slate-500">-</span>
+              </td>
+
+              <!-- 并发数 -->
+              <td class="px-4 py-3">
+                <span class="text-sm text-slate-300">{{ user.concurrency }}</span>
               </td>
 
               <!-- 注册时间 -->
@@ -148,18 +195,25 @@
               <td class="px-4 py-3">
                 <div class="flex items-center justify-end gap-2">
                   <button
-                    @click="openUserDetail(user)"
+                    @click="handleEdit(user)"
                     class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800"
-                    title="查看详情"
+                    title="编辑用户"
                   >
-                    👁️ 详情
+                    ✏️ 编辑
                   </button>
                   <button
-                    @click="openRechargeDialog(user)"
-                    class="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400 backdrop-blur-sm transition hover:border-emerald-400 hover:bg-emerald-500/20"
-                    title="充值余额"
+                    @click="handleAllowedGroups(user)"
+                    class="rounded-lg border border-purple-500/50 bg-purple-500/10 px-3 py-1.5 text-xs font-medium text-purple-400 backdrop-blur-sm transition hover:border-purple-400 hover:bg-purple-500/20"
+                    title="管理分组"
                   >
-                    💰 充值
+                    📁 分组
+                  </button>
+                  <button
+                    @click="handleViewApiKeys(user)"
+                    class="rounded-lg border border-blue-500/50 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 backdrop-blur-sm transition hover:border-blue-400 hover:bg-blue-500/20"
+                    title="查看 API Keys"
+                  >
+                    🔑 密钥
                   </button>
                   <!-- 启用/禁用 -->
                   <button
@@ -175,6 +229,15 @@
                     :title="user.status === 'active' ? '禁用用户' : '启用用户'"
                   >
                     {{ toggling === user.id ? '处理中...' : (user.status === 'active' ? '🚫 禁用' : '✅ 启用') }}
+                  </button>
+                  <!-- 删除 -->
+                  <button
+                    v-if="user.role !== 'admin'"
+                    @click="handleDelete(user)"
+                    class="rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/30"
+                    title="删除用户"
+                  >
+                    🗑️ 删除
                   </button>
                 </div>
               </td>
@@ -214,156 +277,70 @@
       </div>
     </div>
 
-    <!-- 用户详情对话框 -->
-    <div
-      v-if="showDetailDialog && selectedUser"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      @click.self="closeDetailDialog"
-    >
-      <div class="w-full max-w-2xl rounded-xl border border-slate-700/50 bg-slate-900 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h2 class="mb-6 text-xl font-bold text-white">👤 用户详情</h2>
+    <!-- 模态框组件 -->
+    <UserCreateModal
+      :show="showCreateModal"
+      @close="showCreateModal = false"
+      @success="handleModalSuccess"
+    />
 
-        <div class="space-y-4">
-          <!-- 基本信息 -->
-          <div class="rounded-lg border border-slate-700/50 bg-slate-800/50 p-4">
-            <h3 class="mb-3 text-sm font-semibold text-slate-300">基本信息</h3>
-            <div class="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <span class="text-slate-400">用户 ID:</span>
-                <span class="ml-2 text-white">{{ selectedUser.id }}</span>
-              </div>
-              <div>
-                <span class="text-slate-400">邮箱:</span>
-                <span class="ml-2 text-white">{{ selectedUser.email }}</span>
-              </div>
-              <div>
-                <span class="text-slate-400">用户名:</span>
-                <span class="ml-2 text-white">{{ selectedUser.username || '-' }}</span>
-              </div>
-              <div>
-                <span class="text-slate-400">角色:</span>
-                <span class="ml-2 text-white">{{ selectedUser.role === 'admin' ? '管理员' : '用户' }}</span>
-              </div>
-              <div>
-                <span class="text-slate-400">状态:</span>
-                <span class="ml-2 text-white">{{ selectedUser.status === 'active' ? '活跃' : '禁用' }}</span>
-              </div>
-              <div>
-                <span class="text-slate-400">余额:</span>
-                <span class="ml-2 text-emerald-400 font-semibold">${{ selectedUser.balance.toFixed(2) }}</span>
-              </div>
-              <div>
-                <span class="text-slate-400">并发数:</span>
-                <span class="ml-2 text-white">{{ selectedUser.concurrency }}</span>
-              </div>
-              <div>
-                <span class="text-slate-400">注册时间:</span>
-                <span class="ml-2 text-white">{{ formatDateTime(selectedUser.created_at) }}</span>
-              </div>
-            </div>
-          </div>
+    <UserEditModal
+      :show="showEditModal"
+      :user="editingUser"
+      @close="closeEditModal"
+      @success="handleModalSuccess"
+    />
 
-          <!-- 订阅信息 -->
-          <div v-if="selectedUser.subscriptions && selectedUser.subscriptions.length > 0" class="rounded-lg border border-slate-700/50 bg-slate-800/50 p-4">
-            <h3 class="mb-3 text-sm font-semibold text-slate-300">订阅信息</h3>
-            <div class="space-y-2">
-              <div
-                v-for="sub in selectedUser.subscriptions"
-                :key="sub.id"
-                class="rounded border border-slate-700/30 bg-slate-900/50 p-3 text-sm"
-              >
-                <div class="flex items-center justify-between">
-                  <span class="text-white">分组 #{{ sub.group_id }}</span>
-                  <span
-                    :class="{
-                      'text-green-400': sub.status === 'active',
-                      'text-red-400': sub.status === 'expired',
-                      'text-slate-400': sub.status === 'revoked'
-                    }"
-                  >
-                    {{ sub.status === 'active' ? '✓ 活跃' : sub.status === 'expired' ? '✗ 已过期' : '✗ 已撤销' }}
-                  </span>
-                </div>
-                <div class="mt-1 text-xs text-slate-400">
-                  过期时间: {{ sub.expires_at ? formatDateTime(sub.expires_at) : '永久' }}
-                </div>
-              </div>
-            </div>
-          </div>
+    <UserApiKeysModal
+      :show="showApiKeysModal"
+      :user="viewingUser"
+      @close="closeApiKeysModal"
+    />
 
-          <!-- 备注 -->
-          <div v-if="selectedUser.notes" class="rounded-lg border border-slate-700/50 bg-slate-800/50 p-4">
-            <h3 class="mb-3 text-sm font-semibold text-slate-300">备注</h3>
-            <p class="text-sm text-slate-300">{{ selectedUser.notes }}</p>
-          </div>
-        </div>
+    <!-- 余额历史弹窗 -->
+    <UserBalanceHistoryModal
+      :show="showBalanceHistoryModal"
+      :user="balanceHistoryUser"
+      @close="showBalanceHistoryModal = false"
+      @deposit="handleDepositFromHistory"
+      @refund="handleRefundFromHistory"
+    />
 
-        <div class="mt-6 flex justify-end">
-          <button
-            @click="closeDetailDialog"
-            class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800"
-          >
-            关闭
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- 充值弹窗 -->
+    <UserDepositModal
+      :show="showDepositModal"
+      :user="depositUser"
+      @close="showDepositModal = false"
+      @success="handleDepositSuccess"
+    />
 
-    <!-- 充值对话框 -->
-    <div
-      v-if="showRechargeDialog && selectedUser"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      @click.self="closeRechargeDialog"
-    >
-      <div class="w-full max-w-md rounded-xl border border-slate-700/50 bg-slate-900 p-6 shadow-2xl">
-        <h2 class="mb-6 text-xl font-bold text-white">💰 充值余额</h2>
+    <!-- 退款弹窗 -->
+    <UserRefundModal
+      :show="showRefundModal"
+      :user="refundUser"
+      @close="showRefundModal = false"
+      @success="handleRefundSuccess"
+    />
 
-        <div class="mb-4">
-          <div class="mb-2 text-sm text-slate-400">用户</div>
-          <div class="text-white">{{ selectedUser.email }}</div>
-          <div class="mt-1 text-sm text-slate-400">当前余额: <span class="text-emerald-400 font-semibold">${{ selectedUser.balance.toFixed(2) }}</span></div>
-        </div>
+    <!-- 分组管理弹窗 -->
+    <UserAllowedGroupsModal
+      :show="showAllowedGroupsModal"
+      :user="allowedGroupsUser"
+      @close="showAllowedGroupsModal = false"
+      @success="loadUsers"
+    />
 
-        <div class="mb-4">
-          <label class="mb-2 block text-sm font-medium text-slate-300">充值金额 *</label>
-          <input
-            v-model.number="rechargeAmount"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0.00"
-            class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-white placeholder-slate-500 backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-          />
-          <div class="mt-2 text-xs text-slate-400">输入正数充值，负数扣款</div>
-        </div>
-
-        <div class="mb-6">
-          <label class="mb-2 block text-sm font-medium text-slate-300">备注（可选）</label>
-          <textarea
-            v-model="rechargeRemark"
-            rows="2"
-            placeholder="充值原因或备注"
-            class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-white placeholder-slate-500 backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-          ></textarea>
-        </div>
-
-        <div class="flex justify-end gap-3">
-          <button
-            @click="closeRechargeDialog"
-            class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800"
-          >
-            取消
-          </button>
-          <button
-            @click="handleRecharge"
-            :disabled="recharging || !rechargeAmount"
-            class="rounded-lg border border-gold-500/50 bg-gradient-to-r from-gold-500/20 to-gold-600/20 px-4 py-2 text-sm font-medium text-gold-400 backdrop-blur-sm transition hover:border-gold-400 hover:from-gold-500/30 hover:to-gold-600/30 disabled:opacity-50"
-          >
-            {{ recharging ? '处理中...' : '确认充值' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- 删除确认对话框 -->
+    <ConfirmDialog
+      :show="showDeleteDialog"
+      title="删除用户"
+      :message="`确定要删除用户 ${deletingUser?.email} 吗？此操作不可撤销。`"
+      confirm-text="删除"
+      cancel-text="取消"
+      type="danger"
+      @confirm="confirmDelete"
+      @cancel="showDeleteDialog = false"
+    />
   </div>
 </template>
 
@@ -372,6 +349,14 @@ import { ref, reactive, onMounted } from 'vue'
 import { adminAPI } from '@/api/admin'
 import type { AdminUser } from '@/types'
 import { showSuccess, showError } from '@/utils/toast'
+import UserCreateModal from '@/components/admin/user/UserCreateModal.vue'
+import UserEditModal from '@/components/admin/user/UserEditModal.vue'
+import UserApiKeysModal from '@/components/admin/user/UserApiKeysModal.vue'
+import UserBalanceHistoryModal from '@/components/admin/user/UserBalanceHistoryModal.vue'
+import UserDepositModal from '@/components/admin/user/UserDepositModal.vue'
+import UserRefundModal from '@/components/admin/user/UserRefundModal.vue'
+import UserAllowedGroupsModal from '@/components/admin/user/UserAllowedGroupsModal.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const users = ref<AdminUser[]>([])
 const loading = ref(false)
@@ -389,15 +374,24 @@ const pagination = reactive({
   pages: 0
 })
 
-// 用户详情对话框
-const showDetailDialog = ref(false)
-const selectedUser = ref<AdminUser | null>(null)
+// 模态框状态
+const showCreateModal = ref(false)
+const showEditModal = ref(false)
+const showApiKeysModal = ref(false)
+const showBalanceHistoryModal = ref(false)
+const showDepositModal = ref(false)
+const showRefundModal = ref(false)
+const showAllowedGroupsModal = ref(false)
+const showDeleteDialog = ref(false)
 
-// 充值对话框
-const showRechargeDialog = ref(false)
-const rechargeAmount = ref<number>(0)
-const rechargeRemark = ref('')
-const recharging = ref(false)
+// 选中的用户
+const editingUser = ref<AdminUser | null>(null)
+const viewingUser = ref<AdminUser | null>(null)
+const balanceHistoryUser = ref<AdminUser | null>(null)
+const depositUser = ref<AdminUser | null>(null)
+const refundUser = ref<AdminUser | null>(null)
+const allowedGroupsUser = ref<AdminUser | null>(null)
+const deletingUser = ref<AdminUser | null>(null)
 
 // 格式化日期时间
 const formatDateTime = (dateStr: string): string => {
@@ -421,7 +415,8 @@ const loadUsers = async () => {
       {
         search: searchQuery.value || undefined,
         role: filters.role || undefined,
-        status: filters.status || undefined
+        status: filters.status || undefined,
+        include_subscriptions: true
       }
     )
     users.value = response.items
@@ -456,6 +451,102 @@ const handlePageChange = (page: number) => {
   loadUsers()
 }
 
+// 编辑用户
+const handleEdit = (user: AdminUser) => {
+  editingUser.value = user
+  showEditModal.value = true
+}
+
+const closeEditModal = () => {
+  showEditModal.value = false
+  editingUser.value = null
+}
+
+// 查看 API Keys
+const handleViewApiKeys = (user: AdminUser) => {
+  viewingUser.value = user
+  showApiKeysModal.value = true
+}
+
+const closeApiKeysModal = () => {
+  showApiKeysModal.value = false
+  viewingUser.value = null
+}
+
+// 余额历史
+const handleBalanceHistory = (user: AdminUser) => {
+  balanceHistoryUser.value = user
+  showBalanceHistoryModal.value = true
+}
+
+const closeBalanceHistoryModal = () => {
+  showBalanceHistoryModal.value = false
+  balanceHistoryUser.value = null
+}
+
+// 分组管理
+const handleAllowedGroups = (user: AdminUser) => {
+  allowedGroupsUser.value = user
+  showAllowedGroupsModal.value = true
+}
+
+const closeAllowedGroupsModal = () => {
+  showAllowedGroupsModal.value = false
+  allowedGroupsUser.value = null
+}
+
+// 充值成功后的回调
+const handleDepositSuccess = async () => {
+  await loadUsers()
+  // 如果余额历史弹窗是打开的，刷新它并更新用户余额
+  if (showBalanceHistoryModal.value && balanceHistoryUser.value) {
+    const userId = balanceHistoryUser.value.id
+    showBalanceHistoryModal.value = false
+    setTimeout(() => {
+      // 从刷新后的用户列表中找到最新的用户数据
+      const updatedUser = users.value.find(u => u.id === userId)
+      if (updatedUser) {
+        balanceHistoryUser.value = updatedUser
+      }
+      showBalanceHistoryModal.value = true
+    }, 100)
+  }
+}
+
+// 退款成功后的回调
+const handleRefundSuccess = async () => {
+  await loadUsers()
+  // 如果余额历史弹窗是打开的，刷新它并更新用户余额
+  if (showBalanceHistoryModal.value && balanceHistoryUser.value) {
+    const userId = balanceHistoryUser.value.id
+    showBalanceHistoryModal.value = false
+    setTimeout(() => {
+      // 从刷新后的用户列表中找到最新的用户数据
+      const updatedUser = users.value.find(u => u.id === userId)
+      if (updatedUser) {
+        balanceHistoryUser.value = updatedUser
+      }
+      showBalanceHistoryModal.value = true
+    }, 100)
+  }
+}
+
+// 从余额历史弹窗触发充值
+const handleDepositFromHistory = () => {
+  if (balanceHistoryUser.value) {
+    depositUser.value = balanceHistoryUser.value
+    showDepositModal.value = true
+  }
+}
+
+// 从余额历史弹窗触发退款
+const handleRefundFromHistory = () => {
+  if (balanceHistoryUser.value) {
+    refundUser.value = balanceHistoryUser.value
+    showRefundModal.value = true
+  }
+}
+
 // 切换用户状态
 const handleToggleStatus = async (user: AdminUser) => {
   toggling.value = user.id
@@ -471,55 +562,29 @@ const handleToggleStatus = async (user: AdminUser) => {
   }
 }
 
-// 打开用户详情
-const openUserDetail = (user: AdminUser) => {
-  selectedUser.value = user
-  showDetailDialog.value = true
+// 删除用户
+const handleDelete = (user: AdminUser) => {
+  deletingUser.value = user
+  showDeleteDialog.value = true
 }
 
-// 关闭用户详情
-const closeDetailDialog = () => {
-  showDetailDialog.value = false
-  selectedUser.value = null
-}
+const confirmDelete = async () => {
+  if (!deletingUser.value) return
 
-// 打开充值对话框
-const openRechargeDialog = (user: AdminUser) => {
-  selectedUser.value = user
-  rechargeAmount.value = 0
-  rechargeRemark.value = ''
-  showRechargeDialog.value = true
-}
-
-// 关闭充值对话框
-const closeRechargeDialog = () => {
-  showRechargeDialog.value = false
-  selectedUser.value = null
-  rechargeAmount.value = 0
-  rechargeRemark.value = ''
-}
-
-// 处理充值
-const handleRecharge = async () => {
-  if (!selectedUser.value || !rechargeAmount.value) return
-
-  recharging.value = true
   try {
-    await adminAPI.users.recharge(selectedUser.value.id, {
-      amount: rechargeAmount.value,
-      remark: rechargeRemark.value || undefined
-    })
-
-    const action = rechargeAmount.value > 0 ? '充值' : '扣款'
-    showSuccess(`${action}成功`)
-
-    closeRechargeDialog()
+    await adminAPI.users.delete(deletingUser.value.id)
+    showSuccess('用户已删除')
+    showDeleteDialog.value = false
+    deletingUser.value = null
     await loadUsers()
   } catch (error: any) {
-    showError(error.response?.data?.error || '充值失败')
-  } finally {
-    recharging.value = false
+    showError(error.response?.data?.error || '删除用户失败')
   }
+}
+
+// 模态框成功回调
+const handleModalSuccess = () => {
+  loadUsers()
 }
 
 onMounted(() => {

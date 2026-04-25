@@ -24,6 +24,16 @@ import type {
   ProviderInstance,
   SubscriptionPlan,
 } from '@/types/payment'
+import type {
+  BillingMode,
+  PricingInterval,
+  ChannelModelPricing,
+  AccountStatsPricingRule,
+  Channel,
+  CreateChannelRequest,
+  UpdateChannelRequest,
+  ModelDefaultPricing,
+} from '@/types'
 
 export interface AdminSnapshot {
   generated_at?: string
@@ -95,12 +105,56 @@ export const adminAPI = {
       },
       options?: { signal?: AbortSignal },
     ) => listEndpoint<AdminUser>('/admin/users', page, pageSize, filters, options),
+    async create(data: {
+      email: string
+      username?: string
+      password: string
+      role: 'admin' | 'user'
+      balance?: number
+      concurrency?: number
+      notes?: string
+    }): Promise<AdminUser> {
+      const response = await apiClient.post<AdminUser>('/admin/users', data)
+      return response.data
+    },
+    async update(id: number, data: {
+      username?: string
+      password?: string
+      role?: 'admin' | 'user'
+      status?: 'active' | 'disabled'
+      concurrency?: number
+      notes?: string
+      allowed_groups?: number[]
+      group_rates?: Record<number, number | null>
+    }): Promise<AdminUser> {
+      const response = await apiClient.put<AdminUser>(`/admin/users/${id}`, data)
+      return response.data
+    },
+    async delete(id: number): Promise<void> {
+      await apiClient.delete(`/admin/users/${id}`)
+    },
     async toggleStatus(id: number, status: 'active' | 'disabled'): Promise<AdminUser> {
       const { data } = await apiClient.put<AdminUser>(`/admin/users/${id}`, { status })
       return data
     },
-    recharge(id: number, data: { amount: number; remark?: string }) {
-      return apiClient.post(`/admin/users/${id}/recharge`, data)
+    async updateBalance(id: number, balance: number, operation: 'set' | 'add' | 'subtract' = 'add', notes?: string): Promise<void> {
+      await apiClient.post(`/admin/users/${id}/balance`, {
+        balance,
+        operation,
+        notes: notes || ''
+      })
+    },
+    async getBalanceHistory(id: number, page = 1, pageSize = 10, type?: string): Promise<PaginatedResponse<any>> {
+      const params: Record<string, any> = { page, page_size: pageSize }
+      if (type) params.type = type
+      const response = await apiClient.get<PaginatedResponse<any>>(`/admin/users/${id}/balance-history`, {
+        params
+      })
+      return response.data
+    },
+    async getApiKeys(id: number): Promise<PaginatedResponse<any>> {
+      const response = await apiClient.get<PaginatedResponse<any>>(`/admin/users/${id}/api-keys`)
+      return response.data
     },
   },
   groups: {
@@ -123,18 +177,106 @@ export const adminAPI = {
       })
       return data
     },
+    async getById(id: number): Promise<AdminGroup> {
+      const { data } = await apiClient.get<AdminGroup>(`/admin/groups/${id}`)
+      return data
+    },
+    async create(groupData: any): Promise<AdminGroup> {
+      const { data } = await apiClient.post<AdminGroup>('/admin/groups', groupData)
+      return data
+    },
+    async update(id: number, updates: any): Promise<AdminGroup> {
+      const { data } = await apiClient.put<AdminGroup>(`/admin/groups/${id}`, updates)
+      return data
+    },
+    async delete(id: number): Promise<{ message: string }> {
+      const { data } = await apiClient.delete<{ message: string }>(`/admin/groups/${id}`)
+      return data
+    },
     async toggleStatus(id: number, status: 'active' | 'inactive'): Promise<AdminGroup> {
       const { data } = await apiClient.put<AdminGroup>(`/admin/groups/${id}`, { status })
       return data
     },
+    async getGroupRateMultipliers(id: number): Promise<any[]> {
+      const { data } = await apiClient.get<any[]>(`/admin/groups/${id}/rate-multipliers`)
+      return data
+    },
+    async batchSetGroupRateMultipliers(
+      id: number,
+      entries: Array<{ user_id: number; rate_multiplier: number }>
+    ): Promise<{ message: string }> {
+      const { data } = await apiClient.put<{ message: string }>(
+        `/admin/groups/${id}/rate-multipliers`,
+        { entries }
+      )
+      return data
+    },
+    async updateSortOrder(
+      updates: Array<{ id: number; sort_order: number }>
+    ): Promise<{ message: string }> {
+      const { data } = await apiClient.put<{ message: string }>('/admin/groups/sort-order', {
+        updates
+      })
+      return data
+    },
+    async getUsageSummary(
+      timezone?: string
+    ): Promise<{ group_id: number; today_cost: number; total_cost: number }[]> {
+      const { data } = await apiClient.get<
+        { group_id: number; today_cost: number; total_cost: number }[]
+      >('/admin/groups/usage-summary', {
+        params: timezone ? { timezone } : undefined
+      })
+      return data
+    },
   },
   channels: {
-    list: (page = 1, pageSize = 20, filters?: Record<string, unknown>, options?: { signal?: AbortSignal }) =>
-      listEndpoint<Record<string, unknown>>('/admin/channels', page, pageSize, filters, options),
+    list: (
+      page = 1,
+      pageSize = 20,
+      filters?: {
+        status?: string
+        search?: string
+        sort_by?: string
+        sort_order?: 'asc' | 'desc'
+      },
+      options?: { signal?: AbortSignal },
+    ) =>
+      apiClient
+        .get<PaginatedResponse<Channel>>('/admin/channels', {
+          params: { page, page_size: pageSize, ...filters },
+          signal: options?.signal,
+        })
+        .then((response) => response.data),
+    async getById(id: number): Promise<Channel> {
+      const { data } = await apiClient.get<Channel>(`/admin/channels/${id}`)
+      return data
+    },
+    async create(req: CreateChannelRequest): Promise<Channel> {
+      const { data } = await apiClient.post<Channel>('/admin/channels', req)
+      return data
+    },
+    async update(id: number, req: UpdateChannelRequest): Promise<Channel> {
+      const { data } = await apiClient.put<Channel>(`/admin/channels/${id}`, req)
+      return data
+    },
+    async delete(id: number): Promise<void> {
+      await apiClient.delete(`/admin/channels/${id}`)
+    },
+    async getModelDefaultPricing(model: string): Promise<ModelDefaultPricing> {
+      const { data } = await apiClient.get<ModelDefaultPricing>('/admin/channels/model-pricing', {
+        params: { model },
+      })
+      return data
+    },
   },
   accounts: {
     list: (page = 1, pageSize = 20, filters?: Record<string, unknown>, options?: { signal?: AbortSignal }) =>
       listEndpoint<Account>('/admin/accounts', page, pageSize, filters, options),
+    async getById(id: number): Promise<Account> {
+      const { data } = await apiClient.get<Account>(`/admin/accounts/${id}`)
+      return data
+    },
     async clearError(id: number): Promise<Account> {
       const { data } = await apiClient.post<Account>(`/admin/accounts/${id}/clear-error`)
       return data
@@ -181,6 +323,10 @@ export const adminAPI = {
     },
     updateSettings(data: Record<string, unknown>) {
       return apiClient.put('/admin/settings', data)
+    },
+    async getWebSearchEmulationConfig(): Promise<{ enabled: boolean; providers: any[] }> {
+      const { data } = await apiClient.get<{ enabled: boolean; providers: any[] }>('/admin/settings/web-search-emulation')
+      return data
     },
   },
   redeem: {

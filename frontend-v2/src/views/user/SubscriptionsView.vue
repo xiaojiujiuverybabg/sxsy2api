@@ -448,15 +448,14 @@ const expiringCount = computed(() => {
 
 // 余额统计计算属性
 const totalBalance = computed(() => {
-  return subscriptions.value.reduce((sum, sub) => {
-    return sum + (sub.balance_usd || 0)
-  }, 0)
+  // 总金额 = 当前余额（因为我们无法从订阅中获取历史充值总额）
+  return currentBalance.value
 })
 
 const usedBalance = computed(() => {
-  return subscriptions.value.reduce((sum, sub) => {
-    return sum + (sub.used_balance_usd || 0)
-  }, 0)
+  // 已使用金额暂时无法准确计算，需要后端提供历史充值总额
+  // 这里返回 0 或者可以通过 API 获取
+  return 0
 })
 
 // 购买套餐计算属性
