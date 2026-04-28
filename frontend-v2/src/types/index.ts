@@ -714,6 +714,11 @@ export interface ExtendSubscriptionRequest {
   days: number
 }
 
+export interface SimpleUser {
+  id: number
+  email: string
+}
+
 export interface CreateProxyRequest {
   name: string
   protocol: ProxyProtocol

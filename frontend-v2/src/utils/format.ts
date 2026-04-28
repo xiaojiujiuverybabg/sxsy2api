@@ -32,6 +32,17 @@ export function formatDateTime(value: unknown): string {
   })
 }
 
+export function formatDate(value: unknown): string {
+  if (!value) return '-'
+  const date = new Date(String(value))
+  if (Number.isNaN(date.getTime())) return '-'
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+}
+
 export function formatDuration(ms: unknown): string {
   const numberValue = Number(ms || 0)
   if (!Number.isFinite(numberValue)) return '0ms'

@@ -227,11 +227,7 @@
           <!-- 过期时间 -->
           <div>
             <label class="mb-2 block text-sm font-medium text-slate-300">过期时间（可选）</label>
-            <input
-              v-model="form.expires_at"
-              type="datetime-local"
-              class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-white backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-            />
+            <DateTimePicker v-model="form.expires_at" placeholder="留空表示永不过期" />
           </div>
 
           <!-- 备注 -->
@@ -272,6 +268,7 @@ import { ref, onMounted } from 'vue'
 import { adminAPI } from '@/api/admin'
 import type { PromoCode } from '@/types'
 import { showSuccess, showError, confirm } from '@/utils/toast'
+import DateTimePicker from '@/components/ui/DateTimePicker.vue'
 
 const loading = ref(false)
 const saving = ref(false)

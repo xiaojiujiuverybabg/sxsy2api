@@ -5,14 +5,18 @@ import type {
   AdminUsageLog,
   AdminUser,
   Announcement,
+  AnnouncementUserReadStatus,
+  AssignSubscriptionRequest,
   BasePaginationResponse,
   DashboardStats,
+  ExtendSubscriptionRequest,
   GroupPlatform,
   PaginatedResponse,
   PromoCode,
   Proxy,
   RedeemCode,
   RedeemCodeType,
+  SimpleUser,
   SubscriptionProgress,
   TrendDataPoint,
   UserSubscription,
@@ -277,14 +281,65 @@ export const adminAPI = {
       const { data } = await apiClient.get<Account>(`/admin/accounts/${id}`)
       return data
     },
+    async create(data: Record<string, unknown>): Promise<Account> {
+      const { data: result } = await apiClient.post<Account>('/admin/accounts', data)
+      return result
+    },
+    async update(id: number, data: Record<string, unknown>): Promise<Account> {
+      const { data: result } = await apiClient.put<Account>(`/admin/accounts/${id}`, data)
+      return result
+    },
+    async delete(id: number): Promise<void> {
+      await apiClient.delete(`/admin/accounts/${id}`)
+    },
+    async toggleStatus(id: number, status: string): Promise<Account> {
+      const { data } = await apiClient.put<Account>(`/admin/accounts/${id}`, { status })
+      return data
+    },
     async clearError(id: number): Promise<Account> {
       const { data } = await apiClient.post<Account>(`/admin/accounts/${id}/clear-error`)
+      return data
+    },
+    async batchClearError(ids: number[]): Promise<void> {
+      await apiClient.post('/admin/accounts/batch-clear-error', { ids })
+    },
+    async testAccount(id: number, model?: string): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.post<Record<string, unknown>>(`/admin/accounts/${id}/test`, model ? { model } : undefined)
+      return data
+    },
+    async getStats(id: number, days = 30): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.get<Record<string, unknown>>(`/admin/accounts/${id}/stats`, { params: { days } })
+      return data
+    },
+    async getUsage(id: number, source?: string): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.get<Record<string, unknown>>(`/admin/accounts/${id}/usage`, { params: source ? { source } : undefined })
+      return data
+    },
+    async clearRateLimit(id: number): Promise<void> {
+      await apiClient.post(`/admin/accounts/${id}/clear-rate-limit`)
+    },
+    async recoverState(id: number): Promise<void> {
+      await apiClient.post(`/admin/accounts/${id}/recover-state`)
+    },
+    async setSchedulable(id: number, schedulable: boolean): Promise<void> {
+      await apiClient.post(`/admin/accounts/${id}/schedulable`, { schedulable })
+    },
+    async refreshCredentials(id: number): Promise<Account> {
+      const { data } = await apiClient.post<Account>(`/admin/accounts/${id}/refresh`)
+      return data
+    },
+    async getBatchTodayStats(ids: number[]): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.post<Record<string, unknown>>('/admin/accounts/today-stats/batch', { ids })
       return data
     },
   },
   proxies: {
     list: (page = 1, pageSize = 20, filters?: Record<string, unknown>, options?: { signal?: AbortSignal }) =>
       listEndpoint<Proxy>('/admin/proxies', page, pageSize, filters, options),
+    async getAll(): Promise<Proxy[]> {
+      const { data } = await apiClient.get<Proxy[]>('/admin/proxies/all')
+      return data
+    },
     create(data: Record<string, unknown>) {
       return apiClient.post<Proxy>('/admin/proxies', data)
     },
@@ -295,7 +350,31 @@ export const adminAPI = {
       return apiClient.delete(`/admin/proxies/${id}`)
     },
     test(id: number) {
-      return apiClient.post(`/admin/proxies/${id}/test`)
+      return apiClient.post<Record<string, unknown>>(`/admin/proxies/${id}/test`)
+    },
+    async batchCreate(proxies: Record<string, unknown>[]): Promise<{ created: number; skipped: number }> {
+      const { data } = await apiClient.post<{ created: number; skipped: number }>('/admin/proxies/batch', { proxies })
+      return data
+    },
+    async batchDelete(ids: number[]): Promise<{ deleted_ids: number[]; skipped: Array<{ id: number; reason: string }> }> {
+      const { data } = await apiClient.post<{ deleted_ids: number[]; skipped: Array<{ id: number; reason: string }> }>('/admin/proxies/batch-delete', { ids })
+      return data
+    },
+    async checkQuality(id: number): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.post<Record<string, unknown>>(`/admin/proxies/${id}/quality-check`)
+      return data
+    },
+    async getProxyAccounts(id: number): Promise<Record<string, unknown>[]> {
+      const { data } = await apiClient.get<Record<string, unknown>[]>(`/admin/proxies/${id}/accounts`)
+      return data
+    },
+    async exportData(params?: Record<string, unknown>): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.get<Record<string, unknown>>('/admin/proxies/data', { params })
+      return data
+    },
+    async importData(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.post<Record<string, unknown>>('/admin/proxies/data', payload)
+      return data
     },
   },
   subscriptions: {
@@ -305,6 +384,20 @@ export const adminAPI = {
       const { data } = await apiClient.get<SubscriptionProgress>(`/admin/subscriptions/${id}/progress`)
       return data
     },
+    async assign(data: AssignSubscriptionRequest): Promise<UserSubscription> {
+      const { data: result } = await apiClient.post<UserSubscription>('/admin/subscriptions/assign', data)
+      return result
+    },
+    async extend(id: number, data: ExtendSubscriptionRequest): Promise<UserSubscription> {
+      const { data: result } = await apiClient.post<UserSubscription>(`/admin/subscriptions/${id}/extend`, data)
+      return result
+    },
+    async revoke(id: number): Promise<void> {
+      await apiClient.delete(`/admin/subscriptions/${id}`)
+    },
+    async resetQuota(id: number, options: { daily?: boolean; weekly?: boolean; monthly?: boolean }): Promise<void> {
+      await apiClient.post(`/admin/subscriptions/${id}/reset-quota`, options)
+    },
   },
   usage: {
     list: (params: Record<string, unknown>, options?: { signal?: AbortSignal }) =>
@@ -313,6 +406,12 @@ export const adminAPI = {
         .then((response) => response.data),
     async getStats(params?: Record<string, unknown>): Promise<Record<string, number>> {
       const { data } = await apiClient.get('/admin/usage/stats', { params })
+      return data
+    },
+    async searchUsers(keyword: string): Promise<SimpleUser[]> {
+      const { data } = await apiClient.get<SimpleUser[]>('/admin/usage/search-users', {
+        params: { q: keyword }
+      })
       return data
     },
   },
@@ -379,8 +478,8 @@ export const adminAPI = {
     async delete(id: number): Promise<void> {
       await apiClient.delete(`/admin/announcements/${id}`)
     },
-    async getReadStatus(id: number): Promise<BasePaginationResponse<any>> {
-      const response = await apiClient.get<BasePaginationResponse<any>>(`/admin/announcements/${id}/read-status`)
+    async getReadStatus(id: number, params?: Record<string, unknown>, signal?: AbortSignal): Promise<BasePaginationResponse<AnnouncementUserReadStatus>> {
+      const response = await apiClient.get<BasePaginationResponse<AnnouncementUserReadStatus>>(`/admin/announcements/${id}/read-status`, { params, signal })
       return response.data
     },
   },

@@ -1,481 +1,405 @@
-<template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
-    <!-- 页面标题 -->
-    <div class="mb-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold text-white">📢 公告管理</h1>
-          <p class="mt-2 text-sm text-slate-400">发布和管理系统公告</p>
-        </div>
-        <div class="flex gap-3">
-          <button
-            @click="loadAnnouncements"
-            :disabled="loading"
-            class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800 disabled:opacity-50"
-          >
-            <span v-if="loading">🔄 加载中...</span>
-            <span v-else>🔄 刷新</span>
-          </button>
-          <button
-            @click="openCreateDialog"
-            class="rounded-lg border border-gold-500/50 bg-gradient-to-r from-gold-500/20 to-gold-600/20 px-4 py-2 text-sm font-medium text-gold-400 backdrop-blur-sm transition hover:border-gold-400 hover:from-gold-500/30 hover:to-gold-600/30"
-          >
-            ➕ 创建公告
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 筛选器 -->
-    <div class="mb-6 rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 backdrop-blur-sm">
-      <div class="flex flex-wrap items-center gap-3">
-        <select
-          v-model="filters.status"
-          @change="applyFilters"
-          class="rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm text-white backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-        >
-          <option value="">全部状态</option>
-          <option value="draft">草稿</option>
-          <option value="active">活跃</option>
-          <option value="archived">已归档</option>
-        </select>
-
-        <select
-          v-model="filters.notify_mode"
-          @change="applyFilters"
-          class="rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm text-white backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-        >
-          <option value="">全部通知模式</option>
-          <option value="silent">静默</option>
-          <option value="popup">弹窗</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- 公告列表 -->
-    <div class="rounded-xl border border-slate-700/50 bg-slate-800/40 backdrop-blur-sm overflow-hidden">
-      <!-- 加载状态 -->
-      <div v-if="loading && announcements.length === 0" class="flex items-center justify-center py-20">
-        <div class="text-center">
-          <div class="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-slate-700 border-t-gold-500"></div>
-          <p class="text-sm text-slate-400">加载中...</p>
-        </div>
-      </div>
-
-      <!-- 空状态 -->
-      <div v-else-if="announcements.length === 0" class="flex flex-col items-center justify-center py-20">
-        <div class="mb-4 text-6xl">📭</div>
-        <p class="text-lg font-medium text-slate-300">暂无公告</p>
-        <p class="mt-2 text-sm text-slate-500">点击"创建公告"按钮添加第一条公告</p>
-      </div>
-
-      <!-- 公告卡片列表 -->
-      <div v-else class="divide-y divide-slate-700/30">
-        <div
-          v-for="announcement in announcements"
-          :key="announcement.id"
-          class="p-6 transition hover:bg-slate-700/20"
-        >
-          <div class="flex items-start justify-between gap-4">
-            <!-- 左侧内容 -->
-            <div class="flex-1">
-              <div class="flex items-center gap-3 mb-2">
-                <h3 class="text-lg font-semibold text-white">{{ announcement.title }}</h3>
-                <span
-                  :class="{
-                    'bg-green-500/20 text-green-400 border-green-500/50': announcement.status === 'active',
-                    'bg-slate-500/20 text-slate-400 border-slate-500/50': announcement.status === 'draft',
-                    'bg-orange-500/20 text-orange-400 border-orange-500/50': announcement.status === 'archived'
-                  }"
-                  class="rounded-full border px-2 py-0.5 text-xs font-medium"
-                >
-                  {{ statusText(announcement.status) }}
-                </span>
-                <span
-                  :class="{
-                    'bg-gold-500/20 text-gold-400 border-gold-500/50': announcement.notify_mode === 'popup',
-                    'bg-slate-500/20 text-slate-400 border-slate-500/50': announcement.notify_mode === 'silent'
-                  }"
-                  class="rounded-full border px-2 py-0.5 text-xs font-medium"
-                >
-                  {{ announcement.notify_mode === 'popup' ? '🔔 弹窗' : '🔕 静默' }}
-                </span>
-              </div>
-
-              <p class="text-sm text-slate-400 mb-3 line-clamp-2">{{ announcement.content }}</p>
-
-              <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                <span>📅 创建: {{ formatDate(announcement.created_at) }}</span>
-                <span v-if="announcement.starts_at">⏰ 开始: {{ formatDate(announcement.starts_at) }}</span>
-                <span v-if="announcement.ends_at">⏱️ 结束: {{ formatDate(announcement.ends_at) }}</span>
-              </div>
-            </div>
-
-            <!-- 右侧操作 -->
-            <div class="flex gap-2">
-              <button
-                @click="viewReadStatus(announcement)"
-                class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800"
-              >
-                👁️ 查看阅读
-              </button>
-              <button
-                @click="openEditDialog(announcement)"
-                class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800"
-              >
-                ✏️ 编辑
-              </button>
-              <button
-                @click="deleteAnnouncement(announcement.id)"
-                class="rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 backdrop-blur-sm transition hover:border-red-400 hover:bg-red-500/20"
-              >
-                🗑️ 删除
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 创建/编辑对话框 -->
-    <div
-      v-if="showDialog"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      @click.self="closeDialog"
-    >
-      <div class="w-full max-w-2xl rounded-xl border border-slate-700/50 bg-slate-900 p-6 shadow-2xl">
-        <h2 class="mb-6 text-xl font-bold text-white">
-          {{ editingAnnouncement ? '✏️ 编辑公告' : '➕ 创建公告' }}
-        </h2>
-
-        <div class="space-y-4">
-          <!-- 标题 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-slate-300">标题</label>
-            <input
-              v-model="form.title"
-              type="text"
-              placeholder="输入公告标题"
-              class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-white placeholder-slate-500 backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-            />
-          </div>
-
-          <!-- 内容 -->
-          <div>
-            <label class="mb-2 block text-sm font-medium text-slate-300">内容</label>
-            <textarea
-              v-model="form.content"
-              rows="4"
-              placeholder="输入公告内容"
-              class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-white placeholder-slate-500 backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-            ></textarea>
-          </div>
-
-          <!-- 状态和通知模式 -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="mb-2 block text-sm font-medium text-slate-300">状态</label>
-              <select
-                v-model="form.status"
-                class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-white backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-              >
-                <option value="draft">草稿</option>
-                <option value="active">活跃</option>
-                <option value="archived">已归档</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="mb-2 block text-sm font-medium text-slate-300">通知模式</label>
-              <select
-                v-model="form.notify_mode"
-                class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-white backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-              >
-                <option value="silent">静默</option>
-                <option value="popup">弹窗</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- 时间范围 -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="mb-2 block text-sm font-medium text-slate-300">开始时间（可选）</label>
-              <input
-                v-model="form.starts_at"
-                type="datetime-local"
-                class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-white backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-              />
-            </div>
-
-            <div>
-              <label class="mb-2 block text-sm font-medium text-slate-300">结束时间（可选）</label>
-              <input
-                v-model="form.ends_at"
-                type="datetime-local"
-                class="w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-white backdrop-blur-sm transition focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- 对话框按钮 -->
-        <div class="mt-6 flex justify-end gap-3">
-          <button
-            @click="closeDialog"
-            class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800"
-          >
-            取消
-          </button>
-          <button
-            @click="saveAnnouncement"
-            :disabled="saving"
-            class="rounded-lg border border-gold-500/50 bg-gradient-to-r from-gold-500/20 to-gold-600/20 px-4 py-2 text-sm font-medium text-gold-400 backdrop-blur-sm transition hover:border-gold-400 hover:from-gold-500/30 hover:to-gold-600/30 disabled:opacity-50"
-          >
-            {{ saving ? '保存中...' : '保存' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 阅读状态对话框 -->
-    <div
-      v-if="showReadStatusDialog"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      @click.self="closeReadStatusDialog"
-    >
-      <div class="w-full max-w-4xl rounded-xl border border-slate-700/50 bg-slate-900 p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
-        <h2 class="mb-6 text-xl font-bold text-white">👁️ 阅读状态</h2>
-
-        <!-- 加载状态 -->
-        <div v-if="loadingReadStatus" class="flex items-center justify-center py-12">
-          <div class="text-center">
-            <div class="mb-4 inline-block h-10 w-10 animate-spin rounded-full border-4 border-slate-700 border-t-gold-500"></div>
-            <p class="text-sm text-slate-400">加载中...</p>
-          </div>
-        </div>
-
-        <!-- 阅读状态列表 -->
-        <div v-else-if="readStatuses.length > 0" class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="border-b border-slate-700/50 bg-slate-800/50">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">用户</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">余额</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">是否符合</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">阅读时间</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-700/30">
-              <tr
-                v-for="status in readStatuses"
-                :key="status.user_id"
-                class="transition hover:bg-slate-700/20"
-              >
-                <td class="px-4 py-3">
-                  <div class="text-sm text-white">{{ status.email }}</div>
-                  <div class="text-xs text-slate-400">{{ status.username }}</div>
-                </td>
-                <td class="px-4 py-3 text-sm text-slate-300">¥{{ status.balance.toFixed(2) }}</td>
-                <td class="px-4 py-3">
-                  <span
-                    :class="status.eligible ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'bg-slate-500/20 text-slate-400 border-slate-500/50'"
-                    class="rounded-full border px-2 py-0.5 text-xs font-medium"
-                  >
-                    {{ status.eligible ? '✓ 是' : '✗ 否' }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-sm text-slate-300">
-                  {{ status.read_at ? formatDate(status.read_at) : '未读' }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- 空状态 -->
-        <div v-else class="flex flex-col items-center justify-center py-12">
-          <div class="mb-4 text-4xl">📭</div>
-          <p class="text-sm text-slate-400">暂无阅读数据</p>
-        </div>
-
-        <div class="mt-6 flex justify-end">
-          <button
-            @click="closeReadStatusDialog"
-            class="rounded-lg border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 backdrop-blur-sm transition hover:border-slate-600 hover:bg-slate-800"
-          >
-            关闭
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { adminAPI } from '@/api/admin'
-import type { Announcement, AnnouncementUserReadStatus } from '@/types'
-import { showSuccess, showError, confirm } from '@/utils/toast'
+import { confirm, showSuccess, showError } from '@/utils/toast'
+import type { Announcement, AdminGroup } from '@/types'
+import AnnouncementFormModal from '@/components/admin/announcement/AnnouncementFormModal.vue'
+import AnnouncementReadStatusModal from '@/components/admin/announcement/AnnouncementReadStatusModal.vue'
 
+// ---- Data state ----
+const announcements = ref<Announcement[]>([])
+const allGroups = ref<AdminGroup[]>([])
 const loading = ref(false)
 const saving = ref(false)
-const announcements = ref<Announcement[]>([])
-const filters = ref({
-  status: '',
-  notify_mode: ''
+let abortController: AbortController | null = null
+
+// ---- Filters ----
+const statusFilter = ref('')
+const notifyModeFilter = ref('')
+
+// ---- Pagination ----
+const pagination = reactive({
+  page: 1,
+  page_size: 20,
+  total: 0,
+  pages: 0,
 })
 
-const showDialog = ref(false)
+// ---- Modal state ----
+const showFormModal = ref(false)
+const showReadStatusModal = ref(false)
 const editingAnnouncement = ref<Announcement | null>(null)
-const form = ref({
-  title: '',
-  content: '',
-  status: 'draft' as 'draft' | 'active' | 'archived',
-  notify_mode: 'silent' as 'silent' | 'popup',
-  starts_at: '',
-  ends_at: ''
+const readStatusAnnouncement = ref<Announcement | null>(null)
+
+// ---- Computed stats ----
+const stats = computed(() => {
+  const total = announcements.value.length
+  const active = announcements.value.filter(a => a.status === 'active').length
+  const draft = announcements.value.filter(a => a.status === 'draft').length
+  const archived = announcements.value.filter(a => a.status === 'archived').length
+  return { total, active, draft, archived }
 })
 
-const showReadStatusDialog = ref(false)
-const loadingReadStatus = ref(false)
-const readStatuses = ref<AnnouncementUserReadStatus[]>([])
-const currentAnnouncementId = ref<number | null>(null)
+const rangeStart = computed(() => (pagination.page - 1) * pagination.page_size + 1)
+const rangeEnd = computed(() => Math.min(pagination.page * pagination.page_size, pagination.total))
 
-onMounted(() => {
-  loadAnnouncements()
-})
-
+// ---- Data loading ----
 async function loadAnnouncements() {
+  if (abortController) abortController.abort()
+  const controller = new AbortController()
+  abortController = controller
+
   loading.value = true
   try {
-    const response = await adminAPI.announcements.list()
-    announcements.value = response.data
-  } catch (error: any) {
-    showError({ message: error.response?.data?.error || '加载公告失败' })
+    const filters: Record<string, unknown> = {}
+    if (statusFilter.value) filters.status = statusFilter.value
+    if (notifyModeFilter.value) filters.notify_mode = notifyModeFilter.value
+
+    const response = await adminAPI.announcements.list(
+      pagination.page,
+      pagination.page_size,
+      filters,
+      { signal: controller.signal }
+    )
+    if (controller.signal.aborted) return
+    announcements.value = response.items
+    pagination.total = response.total
+    pagination.pages = response.pages
+  } catch (err: any) {
+    if (err?.name === 'AbortError' || err?.code === 'ERR_CANCELED') return
+    showError('加载公告失败')
   } finally {
-    loading.value = false
+    if (abortController === controller) {
+      loading.value = false
+      abortController = null
+    }
   }
 }
 
-function applyFilters() {
+async function loadGroups() {
+  try {
+    allGroups.value = await adminAPI.groups.getAll()
+  } catch { /* ignore */ }
+}
+
+// ---- Filter handlers ----
+function handleFilterChange() {
+  pagination.page = 1
   loadAnnouncements()
 }
 
-function openCreateDialog() {
+// ---- Pagination ----
+function goPage(p: number) {
+  if (p < 1 || p > pagination.pages) return
+  pagination.page = p
+  loadAnnouncements()
+}
+
+function onPageSizeChange(size: number) {
+  pagination.page_size = size
+  pagination.page = 1
+  loadAnnouncements()
+}
+
+// ---- CRUD ----
+function openCreate() {
   editingAnnouncement.value = null
-  form.value = {
-    title: '',
-    content: '',
-    status: 'draft',
-    notify_mode: 'silent',
-    starts_at: '',
-    ends_at: ''
-  }
-  showDialog.value = true
+  showFormModal.value = true
 }
 
-function openEditDialog(announcement: Announcement) {
-  editingAnnouncement.value = announcement
-  form.value = {
-    title: announcement.title,
-    content: announcement.content,
-    status: announcement.status,
-    notify_mode: announcement.notify_mode,
-    starts_at: announcement.starts_at ? announcement.starts_at.slice(0, 16) : '',
-    ends_at: announcement.ends_at ? announcement.ends_at.slice(0, 16) : ''
-  }
-  showDialog.value = true
+function openEdit(a: Announcement) {
+  editingAnnouncement.value = a
+  showFormModal.value = true
 }
 
-function closeDialog() {
-  showDialog.value = false
-  editingAnnouncement.value = null
-}
-
-async function saveAnnouncement() {
-  if (!form.value.title || !form.value.content) {
-    showError({ message: '请填写标题和内容' })
-    return
-  }
-
+async function handleSubmit(data: Record<string, unknown>, isEdit: boolean) {
   saving.value = true
   try {
-    const data = {
-      title: form.value.title,
-      content: form.value.content,
-      status: form.value.status,
-      notify_mode: form.value.notify_mode,
-      starts_at: form.value.starts_at || undefined,
-      ends_at: form.value.ends_at || undefined,
-      targeting: { all_users: true }
-    }
-
-    if (editingAnnouncement.value) {
+    if (isEdit && editingAnnouncement.value) {
       await adminAPI.announcements.update(editingAnnouncement.value.id, data)
-      showSuccess({ message: '公告更新成功' })
+      showSuccess('公告更新成功')
     } else {
       await adminAPI.announcements.create(data)
-      showSuccess({ message: '公告创建成功' })
+      showSuccess('公告创建成功')
     }
-
-    closeDialog()
+    showFormModal.value = false
     loadAnnouncements()
-  } catch (error: any) {
-    showError({ message: error.response?.data?.error || '保存失败' })
+  } catch (err: any) {
+    showError(err?.response?.data?.message || '保存失败')
   } finally {
     saving.value = false
   }
 }
 
-async function deleteAnnouncement(id: number) {
-  const confirmed = await confirm({
-    title: '确认删除',
-    message: '确定要删除这条公告吗？此操作不可恢复。'
-  })
-
-  if (!confirmed) return
-
+async function handleDelete(id: number, title: string) {
+  const ok = await confirm(`确定要删除公告「${title}」吗？此操作不可恢复。`)
+  if (!ok) return
   try {
     await adminAPI.announcements.delete(id)
-    showSuccess({ message: '公告删除成功' })
+    showSuccess('公告已删除')
     loadAnnouncements()
-  } catch (error: any) {
-    showError({ message: error.response?.data?.error || '删除失败' })
+  } catch (err: any) {
+    showError(err?.response?.data?.message || '删除失败')
   }
 }
 
-async function viewReadStatus(announcement: Announcement) {
-  currentAnnouncementId.value = announcement.id
-  showReadStatusDialog.value = true
-  loadingReadStatus.value = true
-
-  try {
-    const response = await adminAPI.announcements.getReadStatus(announcement.id)
-    readStatuses.value = response.data
-  } catch (error: any) {
-    showError({ message: error.response?.data?.error || '加载阅读状态失败' })
-  } finally {
-    loadingReadStatus.value = false
-  }
+function openReadStatus(a: Announcement) {
+  readStatusAnnouncement.value = a
+  showReadStatusModal.value = true
 }
 
-function closeReadStatusDialog() {
-  showReadStatusDialog.value = false
-  currentAnnouncementId.value = null
-  readStatuses.value = []
+// ---- Helpers ----
+function statusLabel(s: string) {
+  const map: Record<string, string> = { draft: '草稿', active: '展示中', archived: '已归档' }
+  return map[s] || s
 }
 
-function statusText(status: string): string {
-  const map: Record<string, string> = {
-    draft: '草稿',
-    active: '活跃',
-    archived: '已归档'
-  }
-  return map[status] || status
+function formatDate(d: string) {
+  return new Date(d).toLocaleString('zh-CN')
 }
 
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleString('zh-CN')
+function targetingSummary(a: Announcement) {
+  const t = a.targeting
+  if (!t || !t.any_of || t.any_of.length === 0) return '全部用户'
+  return `${t.any_of.length} 组条件`
 }
+
+// ---- Init ----
+onMounted(() => {
+  loadAnnouncements()
+  loadGroups()
+})
+
+onUnmounted(() => {
+  if (abortController) abortController.abort()
+})
 </script>
+
+<template>
+  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
+    <!-- Page header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-black text-white">公告管理</h1>
+          <p class="mt-2 text-sm font-medium text-slate-400">发布和管理系统公告，配置展示条件和通知方式</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button
+            :disabled="loading"
+            class="rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-slate-400 transition hover:border-amber-500 hover:text-amber-300"
+            @click="loadAnnouncements"
+          >
+            {{ loading ? '刷新中...' : '刷新' }}
+          </button>
+          <button
+            class="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-amber-500/20 transition hover:from-amber-600 hover:to-amber-700"
+            @click="openCreate"
+          >
+            + 创建公告
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats cards -->
+    <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div class="group relative overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-amber-500/50 hover:bg-amber-500/[0.07]">
+        <div class="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-amber-500/10 blur-2xl transition group-hover:bg-amber-500/20"></div>
+        <div class="relative">
+          <p class="text-xs font-bold uppercase tracking-widest text-slate-500">总公告</p>
+          <p class="mt-2 text-3xl font-black text-white">{{ stats.total }}</p>
+        </div>
+      </div>
+      <div class="group relative overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-emerald-500/50 hover:bg-emerald-500/[0.07]">
+        <div class="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-emerald-500/10 blur-2xl transition group-hover:bg-emerald-500/20"></div>
+        <div class="relative">
+          <p class="text-xs font-bold uppercase tracking-widest text-slate-500">展示中</p>
+          <p class="mt-2 text-3xl font-black text-emerald-400">{{ stats.active }}</p>
+        </div>
+      </div>
+      <div class="group relative overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-slate-500/50 hover:bg-slate-500/[0.07]">
+        <div class="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-slate-500/10 blur-2xl transition group-hover:bg-slate-500/20"></div>
+        <div class="relative">
+          <p class="text-xs font-bold uppercase tracking-widest text-slate-500">草稿</p>
+          <p class="mt-2 text-3xl font-black text-slate-400">{{ stats.draft }}</p>
+        </div>
+      </div>
+      <div class="group relative overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-amber-500/50 hover:bg-amber-500/[0.07]">
+        <div class="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-amber-500/10 blur-2xl transition group-hover:bg-amber-500/20"></div>
+        <div class="relative">
+          <p class="text-xs font-bold uppercase tracking-widest text-slate-500">已归档</p>
+          <p class="mt-2 text-3xl font-black text-amber-400">{{ stats.archived }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="mb-6 rounded-[28px] border border-white/10 bg-white/[0.035] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="relative">
+          <select
+            v-model="statusFilter"
+            class="rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-white backdrop-blur-sm transition focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            @change="handleFilterChange"
+          >
+            <option value="">全部状态</option>
+            <option value="draft">草稿</option>
+            <option value="active">展示中</option>
+            <option value="archived">已归档</option>
+          </select>
+        </div>
+        <div class="relative">
+          <select
+            v-model="notifyModeFilter"
+            class="rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-white backdrop-blur-sm transition focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            @change="handleFilterChange"
+          >
+            <option value="">全部通知方式</option>
+            <option value="silent">静默</option>
+            <option value="popup">弹窗</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading && announcements.length === 0" class="flex items-center justify-center py-24">
+      <div class="text-center">
+        <div class="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-white/10 border-t-amber-500"></div>
+        <p class="text-sm text-slate-400">加载公告数据...</p>
+      </div>
+    </div>
+
+    <!-- Empty -->
+    <div v-else-if="announcements.length === 0 && !loading" class="flex flex-col items-center justify-center py-24">
+      <div class="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02]">
+        <svg class="h-10 w-10 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+        </svg>
+      </div>
+      <h3 class="mb-1 text-lg font-medium text-slate-300">暂无公告</h3>
+      <p class="mb-4 text-sm text-slate-500">点击"创建公告"添加第一条系统公告</p>
+      <button
+        class="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-amber-500/20 transition hover:from-amber-600 hover:to-amber-700"
+        @click="openCreate"
+      >
+        + 创建公告
+      </button>
+    </div>
+
+    <!-- Card list -->
+    <div v-else class="space-y-4">
+      <div
+        v-for="a in announcements"
+        :key="a.id"
+        :class="[
+          'group rounded-2xl border bg-white/[0.02] p-5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5',
+          a.status === 'active' ? 'border-emerald-500/20 hover:border-emerald-500/40' :
+          a.status === 'draft' ? 'border-white/10 hover:border-white/20' :
+          'border-amber-500/20 hover:border-amber-500/40'
+        ]"
+      >
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1 min-w-0">
+            <!-- Header row -->
+            <div class="flex items-center gap-2 mb-2 flex-wrap">
+              <h3 class="text-base font-bold text-white truncate">{{ a.title }}</h3>
+              <span :class="[
+                'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold',
+                a.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                a.status === 'draft' ? 'bg-slate-500/10 text-slate-400 border-slate-500/30' :
+                'bg-amber-500/10 text-amber-400 border-amber-500/30'
+              ]">{{ statusLabel(a.status) }}</span>
+              <span :class="[
+                'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold',
+                a.notify_mode === 'popup' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
+              ]">{{ a.notify_mode === 'popup' ? '弹窗' : '静默' }}</span>
+              <span class="shrink-0 rounded-full bg-white/[0.04] border border-white/5 px-2 py-0.5 text-[10px] text-slate-500">{{ targetingSummary(a) }}</span>
+            </div>
+
+            <!-- Content preview -->
+            <p class="text-sm text-slate-400 mb-3 line-clamp-2">{{ a.content }}</p>
+
+            <!-- Meta row -->
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
+              <span>创建于 {{ formatDate(a.created_at) }}</span>
+              <span v-if="a.starts_at">开始 {{ formatDate(a.starts_at) }}</span>
+              <span v-else class="text-slate-600">立即生效</span>
+              <span v-if="a.ends_at">结束 {{ formatDate(a.ends_at) }}</span>
+              <span v-else class="text-slate-600">永不过期</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              class="rounded-lg bg-white/[0.05] px-3 py-1.5 text-[11px] font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+              @click="openReadStatus(a)"
+            >阅读状态</button>
+            <button
+              class="rounded-lg bg-white/[0.05] px-3 py-1.5 text-[11px] font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+              @click="openEdit(a)"
+            >编辑</button>
+            <button
+              class="rounded-lg bg-white/[0.05] px-2.5 py-1.5 text-[11px] font-medium text-red-400/50 transition hover:bg-red-500/10 hover:text-red-400"
+              @click="handleDelete(a.id, a.title)"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clip-rule="evenodd" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="pagination.total > 0" class="mt-6 flex flex-col items-center gap-4">
+      <div class="flex items-center gap-4">
+        <button
+          :disabled="pagination.page <= 1"
+          class="group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-amber-500/30 hover:text-amber-400 disabled:opacity-30"
+          @click="goPage(pagination.page - 1)"
+        >
+          <svg class="h-4 w-4 transition group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <span class="text-sm font-bold text-white">{{ pagination.page }} <span class="text-slate-600">/</span> {{ pagination.pages }}</span>
+        <button
+          :disabled="pagination.page >= pagination.pages"
+          class="group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-amber-500/30 hover:text-amber-400 disabled:opacity-30"
+          @click="goPage(pagination.page + 1)"
+        >
+          <svg class="h-4 w-4 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+        </button>
+      </div>
+      <div class="flex items-center gap-4 text-xs text-slate-500">
+        <span>{{ rangeStart }}-{{ rangeEnd }} / <span class="text-slate-300">{{ pagination.total }}</span> 条</span>
+        <span class="text-slate-600">|</span>
+        <select
+          :value="pagination.page_size"
+          class="rounded-md border-none bg-transparent text-xs text-slate-500 transition hover:text-slate-300 focus:outline-none"
+          @change="onPageSizeChange(Number(($event.target as HTMLSelectElement).value))"
+        >
+          <option :value="10">10条</option>
+          <option :value="20">20条</option>
+          <option :value="50">50条</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Modals -->
+    <AnnouncementFormModal
+      :show="showFormModal"
+      :edit-announcement="editingAnnouncement"
+      :groups="allGroups"
+      :loading="saving"
+      @close="showFormModal = false"
+      @submit="handleSubmit"
+    />
+
+    <AnnouncementReadStatusModal
+      :show="showReadStatusModal"
+      :announcement="readStatusAnnouncement"
+      @close="showReadStatusModal = false"
+    />
+  </div>
+</template>
