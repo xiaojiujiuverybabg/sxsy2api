@@ -5,8 +5,8 @@
         to="/home"
         class="pointer-events-auto flex items-center gap-3 rounded-full border border-white/70 bg-white/76 px-3 py-2 shadow-insetline backdrop-blur-xl transition hover:bg-white"
       >
-        <span class="grid h-9 w-9 place-items-center rounded-full bg-brand-500 text-xs font-black text-white">S2</span>
-        <span class="hidden pr-2 text-sm font-black text-text-primary sm:block">sxsy2Api 控制台</span>
+        <span class="grid h-9 w-9 place-items-center rounded-full bg-brand-500"><img src="/logo.png" alt="AICodeRelay" class="h-6 w-6 object-contain" /></span>
+        <span class="hidden pr-2 text-sm font-black text-text-primary sm:block">AICodeRelay 控制台</span>
       </RouterLink>
 
       <button

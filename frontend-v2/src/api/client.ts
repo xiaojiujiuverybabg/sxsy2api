@@ -46,7 +46,7 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error?.response?.status === 401) {
-      window.dispatchEvent(new CustomEvent('sub2api:unauthorized'))
+      window.dispatchEvent(new CustomEvent('aicoderelay:unauthorized'))
     }
 
     const data = error?.response?.data

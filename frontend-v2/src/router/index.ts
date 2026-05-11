@@ -92,7 +92,7 @@ router.beforeEach(async (to) => {
     await authStore.initialize()
   }
 
-  document.title = `${String(to.meta.title || 'sxsy2Api')} - sxsy2Api`
+  document.title = `${String(to.meta.title || 'AICodeRelay')} - AICodeRelay`
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return {
@@ -117,7 +117,7 @@ router.beforeEach(async (to) => {
   }
 })
 
-window.addEventListener('sub2api:unauthorized', async () => {
+window.addEventListener('aicoderelay:unauthorized', async () => {
   const authStore = useAuthStore()
   authStore.clearSession()
   if (!window.location.pathname.includes('/login')) {

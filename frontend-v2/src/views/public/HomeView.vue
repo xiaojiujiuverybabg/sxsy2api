@@ -4,11 +4,11 @@
     <header class="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b border-brand-500/10 bg-surface-page/60 px-6 py-4 backdrop-blur-xl">
       <div class="flex items-center gap-4">
         <div class="relative grid h-10 w-10 place-items-center rounded-xl bg-brand-500/20 shadow-[0_0_15px_rgba(220,38,38,0.4)] border border-brand-500/30">
-          <span class="text-sm font-black text-brand-400">S2</span>
+          <img src="/logo.png" alt="AICodeRelay" class="h-8 w-8 object-contain" />
           <div class="absolute inset-0 rounded-xl bg-brand-500 opacity-20 blur-md"></div>
         </div>
         <div>
-          <h1 class="text-lg font-black tracking-widest text-white">sxsy2Api</h1>
+          <h1 class="text-lg font-black tracking-widest text-white">AICodeRelay</h1>
           <p class="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-gold-400">智御中枢</p>
         </div>
       </div>

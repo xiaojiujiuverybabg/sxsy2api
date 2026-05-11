@@ -322,14 +322,14 @@ const rtQps = computed(() => rtSummary.value?.summary?.qps || overview.value?.qp
 const rtTps = computed(() => rtSummary.value?.summary?.tps || overview.value?.tps || {})
 
 // Concurrency: Record<string, Info> → Array<Info>
-const concurrencyList = computed(() => {
-  const raw = rawConcurrency.value
+const concurrencyList = computed((): any[] => {
+  const raw: Record<string, any> = rawConcurrency.value || {}
   if (!raw) return []
-  const platforms = raw.platform || {}
+  const platforms: Record<string, any> = raw.platform || {}
   if (Object.keys(platforms).length) return Object.values(platforms)
-  const groups = raw.group || {}
+  const groups: Record<string, any> = raw.group || {}
   if (Object.keys(groups).length) return Object.values(groups)
-  const accounts = raw.account || {}
+  const accounts: Record<string, any> = raw.account || {}
   return Object.values(accounts)
 })
 
@@ -395,7 +395,7 @@ async function loadSnapshot() {
     const data = await adminAPI.ops.getDashboardSnapshotV2(params)
     // Extract overview + throughput_trend + error_trend from snapshot
     overview.value = data?.overview || null
-    tpPoints.value = data?.throughput_trend?.points || data?.throughput_trend || []
+    tpPoints.value = (data as any)?.throughput_trend?.points || (data as any)?.throughput_trend || []
     errDistItems.value = [] // will be loaded separately
   } catch { /* ignore */ }
 }

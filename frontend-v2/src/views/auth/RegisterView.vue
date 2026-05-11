@@ -11,9 +11,9 @@
           
           <div class="relative z-10">
             <div class="flex items-center gap-3">
-              <span class="grid h-12 w-12 place-items-center rounded-xl bg-success-500/20 shadow-[0_0_15px_rgba(16,185,129,0.5)] border border-success-500/30 text-sm font-black text-success-400">S2</span>
+              <span class="grid h-12 w-12 place-items-center rounded-xl bg-success-500/20 shadow-[0_0_15px_rgba(16,185,129,0.5)] border border-success-500/30"><img src="/logo.png" alt="AICodeRelay" class="h-9 w-9 object-contain" /></span>
               <div>
-                <p class="text-base font-black leading-none text-white tracking-widest">sxsy2Api</p>
+                <p class="text-base font-black leading-none text-white tracking-widest">AICodeRelay</p>
                 <p class="mt-1.5 text-[0.65rem] font-bold uppercase tracking-[0.3em] text-success-400">身份铸造</p>
               </div>
             </div>

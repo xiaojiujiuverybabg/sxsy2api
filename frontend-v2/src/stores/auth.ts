@@ -20,7 +20,7 @@ const USER_KEY = 'auth_user'
 const REFRESH_TOKEN_KEY = 'refresh_token'
 const TOKEN_EXPIRES_AT_KEY = 'token_expires_at'
 const TOKEN_REFRESH_BUFFER_MS = 120 * 1000
-const PENDING_OAUTH_SESSION_KEY = 'sxsy2api:pending-oauth-session'
+const PENDING_OAUTH_SESSION_KEY = 'aicoderelay:pending-oauth-session'
 
 type RunMode = 'standard' | 'simple'
 

@@ -5,11 +5,11 @@
       <!-- Logo -->
       <div class="flex items-center gap-3 border-b border-brand-500/10 p-6">
         <div class="relative grid h-10 w-10 place-items-center rounded-xl border border-brand-500/30 bg-brand-500/20 shadow-[0_0_15px_rgba(220,38,38,0.4)]">
-          <span class="text-sm font-black text-brand-400">S2</span>
+          <img src="/logo.png" alt="AICodeRelay" class="h-8 w-8 object-contain" />
           <div class="absolute inset-0 rounded-xl bg-brand-500 opacity-20 blur-md"></div>
         </div>
         <div>
-          <h1 class="text-base font-black tracking-widest text-white">sxsy2Api</h1>
+          <h1 class="text-base font-black tracking-widest text-white">AICodeRelay</h1>
           <p class="text-[0.6rem] font-bold uppercase tracking-[0.3em] text-gold-400">控制中枢</p>
         </div>
       </div>

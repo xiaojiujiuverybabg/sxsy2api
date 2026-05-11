@@ -10,9 +10,9 @@
           
           <div class="relative z-10">
             <div class="flex items-center gap-3">
-              <span class="grid h-12 w-12 place-items-center rounded-xl bg-brand-500/20 shadow-[0_0_15px_rgba(220,38,38,0.5)] border border-brand-500/30 text-sm font-black text-brand-400">S2</span>
+              <span class="grid h-12 w-12 place-items-center rounded-xl bg-brand-500/20 shadow-[0_0_15px_rgba(220,38,38,0.5)] border border-brand-500/30"><img src="/logo.png" alt="AICodeRelay" class="h-9 w-9 object-contain" /></span>
               <div>
-                <p class="text-base font-black leading-none text-white tracking-widest">sxsy2Api</p>
+                <p class="text-base font-black leading-none text-white tracking-widest">AICodeRelay</p>
                 <p class="mt-1.5 text-[0.65rem] font-bold uppercase tracking-[0.3em] text-brand-400">身份通道</p>
               </div>
             </div>
@@ -357,7 +357,7 @@ async function handleSubmit() {
     }
 
     if (!rememberMe.value) {
-      sessionStorage.setItem('sxsy2api:session-only', 'true')
+      sessionStorage.setItem('aicoderelay:session-only', 'true')
     }
 
     appStore.showSuccess('连接成功，正在重定向到控制中枢...')

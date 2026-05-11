@@ -16,7 +16,12 @@ services:
   # Sub2API Application
   # ===========================================================================
   sub2api:
-    image: weishaw/sub2api:latest
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+      args:
+        GOPROXY: ${GOPROXY:-https://goproxy.cn,direct}
+        GOSUMDB: ${GOSUMDB:-sum.golang.google.cn}
     container_name: sub2api
     restart: unless-stopped
     ulimits:
