@@ -661,8 +661,36 @@ export const adminAPI = {
       const { data } = await apiClient.get('/admin/ops/dashboard/snapshot-v2', { params })
       return data
     },
+    async getRealtimeTrafficSummary(params?: Record<string, unknown>): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.get('/admin/ops/realtime-traffic', { params })
+      return data
+    },
+    async getConcurrencyStats(params?: Record<string, unknown>): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.get('/admin/ops/concurrency', { params })
+      return data
+    },
+    async getThroughputTrend(params?: Record<string, unknown>): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.get('/admin/ops/dashboard/throughput-trend', { params })
+      return data
+    },
+    async getErrorDistribution(params?: Record<string, unknown>): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.get('/admin/ops/dashboard/error-distribution', { params })
+      return data
+    },
     async listErrorLogs(params?: Record<string, unknown>): Promise<PaginatedResponse<Record<string, unknown>>> {
       const { data } = await apiClient.get('/admin/ops/errors', { params })
+      return data
+    },
+    async getErrorLogDetail(id: string): Promise<Record<string, unknown>> {
+      const { data } = await apiClient.get(`/admin/ops/errors/${id}`)
+      return data
+    },
+    async listAlertEvents(params?: Record<string, unknown>): Promise<PaginatedResponse<Record<string, unknown>>> {
+      const { data } = await apiClient.get('/admin/ops/alert-events', { params })
+      return data
+    },
+    async listAlertRules(): Promise<Array<Record<string, unknown>>> {
+      const { data } = await apiClient.get('/admin/ops/alert-rules')
       return data
     },
   },
