@@ -894,5 +894,440 @@ export interface InstallResponse {
   restart: boolean
 }
 
+// ==================== Settings Types ====================
+
+export interface DefaultSubscriptionSetting {
+  group_id: number
+  validity_days: number
+}
+
+export type AuthSourceType = 'email' | 'linuxdo' | 'oidc' | 'wechat'
+
+export interface AuthSourceDefaultsValue {
+  balance: number
+  concurrency: number
+  subscriptions: DefaultSubscriptionSetting[]
+  grant_on_signup: boolean
+  grant_on_first_bind: boolean
+}
+
+export type AuthSourceDefaultsState = Record<AuthSourceType, AuthSourceDefaultsValue>
+
+export type WeChatConnectMode = 'open' | 'mp' | 'mobile'
+
+export interface WeChatConnectModeOption {
+  value: WeChatConnectMode
+  labelZh: string
+  labelEn: string
+}
+
+export interface SystemSettings {
+  registration_enabled: boolean
+  email_verify_enabled: boolean
+  registration_email_suffix_whitelist: string[]
+  promo_code_enabled: boolean
+  password_reset_enabled: boolean
+  frontend_url: string
+  invitation_code_enabled: boolean
+  totp_enabled: boolean
+  totp_encryption_key_configured: boolean
+  default_balance: number
+  default_concurrency: number
+  default_subscriptions: DefaultSubscriptionSetting[]
+  auth_source_default_email_balance?: number
+  auth_source_default_email_concurrency?: number
+  auth_source_default_email_subscriptions?: DefaultSubscriptionSetting[]
+  auth_source_default_email_grant_on_signup?: boolean
+  auth_source_default_email_grant_on_first_bind?: boolean
+  auth_source_default_linuxdo_balance?: number
+  auth_source_default_linuxdo_concurrency?: number
+  auth_source_default_linuxdo_subscriptions?: DefaultSubscriptionSetting[]
+  auth_source_default_linuxdo_grant_on_signup?: boolean
+  auth_source_default_linuxdo_grant_on_first_bind?: boolean
+  auth_source_default_oidc_balance?: number
+  auth_source_default_oidc_concurrency?: number
+  auth_source_default_oidc_subscriptions?: DefaultSubscriptionSetting[]
+  auth_source_default_oidc_grant_on_signup?: boolean
+  auth_source_default_oidc_grant_on_first_bind?: boolean
+  auth_source_default_wechat_balance?: number
+  auth_source_default_wechat_concurrency?: number
+  auth_source_default_wechat_subscriptions?: DefaultSubscriptionSetting[]
+  auth_source_default_wechat_grant_on_signup?: boolean
+  auth_source_default_wechat_grant_on_first_bind?: boolean
+  force_email_on_third_party_signup?: boolean
+  site_name: string
+  site_logo: string
+  site_subtitle: string
+  api_base_url: string
+  contact_info: string
+  doc_url: string
+  home_content: string
+  hide_ccs_import_button: boolean
+  table_default_page_size: number
+  table_page_size_options: number[]
+  backend_mode_enabled: boolean
+  custom_menu_items: CustomMenuItem[]
+  custom_endpoints: CustomEndpoint[]
+  smtp_host: string
+  smtp_port: number
+  smtp_username: string
+  smtp_password_configured: boolean
+  smtp_from_email: string
+  smtp_from_name: string
+  smtp_use_tls: boolean
+  turnstile_enabled: boolean
+  turnstile_site_key: string
+  turnstile_secret_key_configured: boolean
+  linuxdo_connect_enabled: boolean
+  linuxdo_connect_client_id: string
+  linuxdo_connect_client_secret_configured: boolean
+  linuxdo_connect_redirect_url: string
+  wechat_connect_enabled: boolean
+  wechat_connect_app_id: string
+  wechat_connect_app_secret_configured: boolean
+  wechat_connect_open_app_id?: string
+  wechat_connect_open_app_secret_configured?: boolean
+  wechat_connect_mp_app_id?: string
+  wechat_connect_mp_app_secret_configured?: boolean
+  wechat_connect_mobile_app_id?: string
+  wechat_connect_mobile_app_secret_configured?: boolean
+  wechat_connect_open_enabled?: boolean
+  wechat_connect_mp_enabled?: boolean
+  wechat_connect_mobile_enabled?: boolean
+  wechat_connect_mode: string
+  wechat_connect_scopes: string
+  wechat_connect_redirect_url: string
+  wechat_connect_frontend_redirect_url: string
+  oidc_connect_enabled: boolean
+  oidc_connect_provider_name: string
+  oidc_connect_client_id: string
+  oidc_connect_client_secret_configured: boolean
+  oidc_connect_issuer_url: string
+  oidc_connect_discovery_url: string
+  oidc_connect_authorize_url: string
+  oidc_connect_token_url: string
+  oidc_connect_userinfo_url: string
+  oidc_connect_jwks_url: string
+  oidc_connect_scopes: string
+  oidc_connect_redirect_url: string
+  oidc_connect_frontend_redirect_url: string
+  oidc_connect_token_auth_method: string
+  oidc_connect_use_pkce: boolean
+  oidc_connect_validate_id_token: boolean
+  oidc_connect_allowed_signing_algs: string
+  oidc_connect_clock_skew_seconds: number
+  oidc_connect_require_email_verified: boolean
+  oidc_connect_userinfo_email_path: string
+  oidc_connect_userinfo_id_path: string
+  oidc_connect_userinfo_username_path: string
+  enable_model_fallback: boolean
+  fallback_model_anthropic: string
+  fallback_model_openai: string
+  fallback_model_gemini: string
+  fallback_model_antigravity: string
+  enable_identity_patch: boolean
+  identity_patch_prompt: string
+  ops_monitoring_enabled: boolean
+  ops_realtime_monitoring_enabled: boolean
+  ops_query_mode_default: string
+  ops_metrics_interval_seconds: number
+  min_claude_code_version: string
+  max_claude_code_version: string
+  allow_ungrouped_key_scheduling: boolean
+  enable_fingerprint_unification: boolean
+  enable_metadata_passthrough: boolean
+  enable_cch_signing: boolean
+  web_search_emulation_enabled?: boolean
+  payment_enabled: boolean
+  payment_min_amount: number
+  payment_max_amount: number
+  payment_daily_limit: number
+  payment_order_timeout_minutes: number
+  payment_max_pending_orders: number
+  payment_enabled_types: string[]
+  payment_balance_disabled: boolean
+  payment_balance_recharge_multiplier: number
+  payment_recharge_fee_rate: number
+  payment_load_balance_strategy: string
+  payment_product_name_prefix: string
+  payment_product_name_suffix: string
+  payment_help_image_url: string
+  payment_help_text: string
+  payment_cancel_rate_limit_enabled: boolean
+  payment_cancel_rate_limit_max: number
+  payment_cancel_rate_limit_window: number
+  payment_cancel_rate_limit_unit: string
+  payment_cancel_rate_limit_window_mode: string
+  payment_visible_method_alipay_source?: string
+  payment_visible_method_wxpay_source?: string
+  payment_visible_method_alipay_enabled?: boolean
+  payment_visible_method_wxpay_enabled?: boolean
+  openai_advanced_scheduler_enabled?: boolean
+  balance_low_notify_enabled: boolean
+  balance_low_notify_threshold: number
+  balance_low_notify_recharge_url: string
+  account_quota_notify_enabled: boolean
+  account_quota_notify_emails: NotifyEmailEntry[]
+}
+
+export interface UpdateSettingsRequest {
+  registration_enabled?: boolean
+  email_verify_enabled?: boolean
+  registration_email_suffix_whitelist?: string[]
+  promo_code_enabled?: boolean
+  password_reset_enabled?: boolean
+  frontend_url?: string
+  invitation_code_enabled?: boolean
+  totp_enabled?: boolean
+  default_balance?: number
+  default_concurrency?: number
+  default_subscriptions?: DefaultSubscriptionSetting[]
+  auth_source_default_email_balance?: number
+  auth_source_default_email_concurrency?: number
+  auth_source_default_email_subscriptions?: DefaultSubscriptionSetting[]
+  auth_source_default_email_grant_on_signup?: boolean
+  auth_source_default_email_grant_on_first_bind?: boolean
+  auth_source_default_linuxdo_balance?: number
+  auth_source_default_linuxdo_concurrency?: number
+  auth_source_default_linuxdo_subscriptions?: DefaultSubscriptionSetting[]
+  auth_source_default_linuxdo_grant_on_signup?: boolean
+  auth_source_default_linuxdo_grant_on_first_bind?: boolean
+  auth_source_default_oidc_balance?: number
+  auth_source_default_oidc_concurrency?: number
+  auth_source_default_oidc_subscriptions?: DefaultSubscriptionSetting[]
+  auth_source_default_oidc_grant_on_signup?: boolean
+  auth_source_default_oidc_grant_on_first_bind?: boolean
+  auth_source_default_wechat_balance?: number
+  auth_source_default_wechat_concurrency?: number
+  auth_source_default_wechat_subscriptions?: DefaultSubscriptionSetting[]
+  auth_source_default_wechat_grant_on_signup?: boolean
+  auth_source_default_wechat_grant_on_first_bind?: boolean
+  force_email_on_third_party_signup?: boolean
+  site_name?: string
+  site_logo?: string
+  site_subtitle?: string
+  api_base_url?: string
+  contact_info?: string
+  doc_url?: string
+  home_content?: string
+  hide_ccs_import_button?: boolean
+  table_default_page_size?: number
+  table_page_size_options?: number[]
+  backend_mode_enabled?: boolean
+  custom_menu_items?: CustomMenuItem[]
+  custom_endpoints?: CustomEndpoint[]
+  smtp_host?: string
+  smtp_port?: number
+  smtp_username?: string
+  smtp_password?: string
+  smtp_from_email?: string
+  smtp_from_name?: string
+  smtp_use_tls?: boolean
+  turnstile_enabled?: boolean
+  turnstile_site_key?: string
+  turnstile_secret_key?: string
+  linuxdo_connect_enabled?: boolean
+  linuxdo_connect_client_id?: string
+  linuxdo_connect_client_secret?: string
+  linuxdo_connect_redirect_url?: string
+  wechat_connect_enabled?: boolean
+  wechat_connect_app_id?: string
+  wechat_connect_app_secret?: string
+  wechat_connect_open_app_id?: string
+  wechat_connect_open_app_secret?: string
+  wechat_connect_mp_app_id?: string
+  wechat_connect_mp_app_secret?: string
+  wechat_connect_mobile_app_id?: string
+  wechat_connect_mobile_app_secret?: string
+  wechat_connect_open_enabled?: boolean
+  wechat_connect_mp_enabled?: boolean
+  wechat_connect_mobile_enabled?: boolean
+  wechat_connect_mode?: string
+  wechat_connect_scopes?: string
+  wechat_connect_redirect_url?: string
+  wechat_connect_frontend_redirect_url?: string
+  oidc_connect_enabled?: boolean
+  oidc_connect_provider_name?: string
+  oidc_connect_client_id?: string
+  oidc_connect_client_secret?: string
+  oidc_connect_issuer_url?: string
+  oidc_connect_discovery_url?: string
+  oidc_connect_authorize_url?: string
+  oidc_connect_token_url?: string
+  oidc_connect_userinfo_url?: string
+  oidc_connect_jwks_url?: string
+  oidc_connect_scopes?: string
+  oidc_connect_redirect_url?: string
+  oidc_connect_frontend_redirect_url?: string
+  oidc_connect_token_auth_method?: string
+  oidc_connect_use_pkce?: boolean
+  oidc_connect_validate_id_token?: boolean
+  oidc_connect_allowed_signing_algs?: string
+  oidc_connect_clock_skew_seconds?: number
+  oidc_connect_require_email_verified?: boolean
+  oidc_connect_userinfo_email_path?: string
+  oidc_connect_userinfo_id_path?: string
+  oidc_connect_userinfo_username_path?: string
+  enable_model_fallback?: boolean
+  fallback_model_anthropic?: string
+  fallback_model_openai?: string
+  fallback_model_gemini?: string
+  fallback_model_antigravity?: string
+  enable_identity_patch?: boolean
+  identity_patch_prompt?: string
+  ops_monitoring_enabled?: boolean
+  ops_realtime_monitoring_enabled?: boolean
+  ops_query_mode_default?: string
+  ops_metrics_interval_seconds?: number
+  min_claude_code_version?: string
+  max_claude_code_version?: string
+  allow_ungrouped_key_scheduling?: boolean
+  enable_fingerprint_unification?: boolean
+  enable_metadata_passthrough?: boolean
+  enable_cch_signing?: boolean
+  payment_enabled?: boolean
+  payment_min_amount?: number
+  payment_max_amount?: number
+  payment_daily_limit?: number
+  payment_order_timeout_minutes?: number
+  payment_max_pending_orders?: number
+  payment_enabled_types?: string[]
+  payment_balance_disabled?: boolean
+  payment_balance_recharge_multiplier?: number
+  payment_recharge_fee_rate?: number
+  payment_load_balance_strategy?: string
+  payment_product_name_prefix?: string
+  payment_product_name_suffix?: string
+  payment_help_image_url?: string
+  payment_help_text?: string
+  payment_cancel_rate_limit_enabled?: boolean
+  payment_cancel_rate_limit_max?: number
+  payment_cancel_rate_limit_window?: number
+  payment_cancel_rate_limit_unit?: string
+  payment_cancel_rate_limit_window_mode?: string
+  payment_visible_method_alipay_source?: string
+  payment_visible_method_wxpay_source?: string
+  payment_visible_method_alipay_enabled?: boolean
+  payment_visible_method_wxpay_enabled?: boolean
+  openai_advanced_scheduler_enabled?: boolean
+  balance_low_notify_enabled?: boolean
+  balance_low_notify_threshold?: number
+  balance_low_notify_recharge_url?: string
+  account_quota_notify_enabled?: boolean
+  account_quota_notify_emails?: NotifyEmailEntry[]
+}
+
+// ==================== Backup Types ====================
+
+export interface BackupS3Config {
+  endpoint: string
+  region: string
+  bucket: string
+  access_key_id: string
+  secret_access_key?: string
+  prefix: string
+  force_path_style: boolean
+}
+
+export interface BackupScheduleConfig {
+  enabled: boolean
+  cron_expr: string
+  retain_days: number
+  retain_count: number
+}
+
+export interface BackupRecord {
+  id: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  backup_type: string
+  file_name: string
+  s3_key: string
+  size_bytes: number
+  triggered_by: string
+  error_message?: string
+  started_at: string
+  finished_at?: string
+  expires_at?: string
+  progress?: string
+  restore_status?: string
+  restore_error?: string
+  restored_at?: string
+}
+
+// ==================== Gateway Types ====================
+
+export interface OverloadCooldownSettings {
+  enabled: boolean
+  cooldown_minutes: number
+}
+
+export interface StreamTimeoutSettings {
+  enabled: boolean
+  action: 'temp_unsched' | 'error' | 'none'
+  temp_unsched_minutes: number
+  threshold_count: number
+  threshold_window_minutes: number
+}
+
+export interface RectifierSettings {
+  enabled: boolean
+  thinking_signature_enabled: boolean
+  thinking_budget_enabled: boolean
+  apikey_signature_enabled: boolean
+  apikey_signature_patterns: string[]
+}
+
+export interface BetaPolicyRule {
+  beta_token: string
+  action: 'pass' | 'filter' | 'block'
+  scope: 'all' | 'oauth' | 'apikey' | 'bedrock'
+  error_message?: string
+  model_whitelist?: string[]
+  fallback_action?: 'pass' | 'filter' | 'block'
+  fallback_error_message?: string
+}
+
+export interface BetaPolicySettings {
+  rules: BetaPolicyRule[]
+}
+
+export interface WebSearchProviderConfig {
+  type: 'brave' | 'tavily'
+  api_key: string
+  api_key_configured: boolean
+  quota_limit: number | null
+  subscribed_at: number | null
+  quota_used?: number
+  proxy_id: number | null
+  expires_at: number | null
+}
+
+export interface WebSearchEmulationConfig {
+  enabled: boolean
+  providers: WebSearchProviderConfig[]
+}
+
+// ==================== System Types ====================
+
+export interface VersionInfo {
+  current_version: string
+  latest_version: string
+  has_update: boolean
+  release_info?: {
+    name: string
+    body: string
+    published_at: string
+    html_url: string
+  }
+  cached: boolean
+  warning?: string
+  build_type: string
+}
+
+export interface UpdateResult {
+  message: string
+  need_restart: boolean
+}
+
 export type { CheckoutInfoResponse, CreateOrderRequest, CreateOrderResult, PaymentChannel, PaymentConfig, PaymentDashboardStats, PaymentOrder, ProviderInstance, SubscriptionPlan } from './payment'
 export * from './channels'

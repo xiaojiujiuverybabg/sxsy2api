@@ -423,8 +423,136 @@ export const adminAPI = {
     updateSettings(data: Record<string, unknown>) {
       return apiClient.put('/admin/settings', data)
     },
-    async getWebSearchEmulationConfig(): Promise<{ enabled: boolean; providers: any[] }> {
-      const { data } = await apiClient.get<{ enabled: boolean; providers: any[] }>('/admin/settings/web-search-emulation')
+    // SMTP
+    testSmtpConnection(config: Record<string, unknown>) {
+      return apiClient.post<{ message: string }>('/admin/settings/test-smtp', config)
+    },
+    sendTestEmail(request: Record<string, unknown>) {
+      return apiClient.post<{ message: string }>('/admin/settings/send-test-email', request)
+    },
+    // Admin API Key
+    async getAdminApiKey(): Promise<{ exists: boolean; masked_key: string }> {
+      const { data } = await apiClient.get<{ exists: boolean; masked_key: string }>('/admin/settings/admin-api-key')
+      return data
+    },
+    async regenerateAdminApiKey(): Promise<{ key: string }> {
+      const { data } = await apiClient.post<{ key: string }>('/admin/settings/admin-api-key/regenerate')
+      return data
+    },
+    async deleteAdminApiKey(): Promise<{ message: string }> {
+      const { data } = await apiClient.delete<{ message: string }>('/admin/settings/admin-api-key')
+      return data
+    },
+    // Overload Cooldown
+    async getOverloadCooldownSettings(): Promise<import('@/types').OverloadCooldownSettings> {
+      const { data } = await apiClient.get<import('@/types').OverloadCooldownSettings>('/admin/settings/overload-cooldown')
+      return data
+    },
+    updateOverloadCooldownSettings(data: import('@/types').OverloadCooldownSettings) {
+      return apiClient.put('/admin/settings/overload-cooldown', data)
+    },
+    // Stream Timeout
+    async getStreamTimeoutSettings(): Promise<import('@/types').StreamTimeoutSettings> {
+      const { data } = await apiClient.get<import('@/types').StreamTimeoutSettings>('/admin/settings/stream-timeout')
+      return data
+    },
+    updateStreamTimeoutSettings(data: import('@/types').StreamTimeoutSettings) {
+      return apiClient.put('/admin/settings/stream-timeout', data)
+    },
+    // Rectifier
+    async getRectifierSettings(): Promise<import('@/types').RectifierSettings> {
+      const { data } = await apiClient.get<import('@/types').RectifierSettings>('/admin/settings/rectifier')
+      return data
+    },
+    updateRectifierSettings(data: import('@/types').RectifierSettings) {
+      return apiClient.put('/admin/settings/rectifier', data)
+    },
+    // Beta Policy
+    async getBetaPolicySettings(): Promise<import('@/types').BetaPolicySettings> {
+      const { data } = await apiClient.get<import('@/types').BetaPolicySettings>('/admin/settings/beta-policy')
+      return data
+    },
+    updateBetaPolicySettings(data: import('@/types').BetaPolicySettings) {
+      return apiClient.put('/admin/settings/beta-policy', data)
+    },
+    // Web Search Emulation
+    async getWebSearchEmulationConfig(): Promise<import('@/types').WebSearchEmulationConfig> {
+      const { data } = await apiClient.get<import('@/types').WebSearchEmulationConfig>('/admin/settings/web-search-emulation')
+      return data
+    },
+    updateWebSearchEmulationConfig(data: import('@/types').WebSearchEmulationConfig) {
+      return apiClient.put('/admin/settings/web-search-emulation', data)
+    },
+    testWebSearchEmulation(query: string) {
+      return apiClient.post('/admin/settings/web-search-emulation/test', { query })
+    },
+    resetWebSearchUsage(payload: { provider_type: string }) {
+      return apiClient.post('/admin/settings/web-search-emulation/reset-usage', payload)
+    },
+  },
+  backup: {
+    async getS3Config(): Promise<import('@/types').BackupS3Config> {
+      const { data } = await apiClient.get<import('@/types').BackupS3Config>('/admin/backups/s3-config')
+      return data
+    },
+    updateS3Config(config: import('@/types').BackupS3Config) {
+      return apiClient.put('/admin/backups/s3-config', config)
+    },
+    testS3Connection(config: import('@/types').BackupS3Config) {
+      return apiClient.post('/admin/backups/s3-config/test', config)
+    },
+    async getSchedule(): Promise<import('@/types').BackupScheduleConfig> {
+      const { data } = await apiClient.get<import('@/types').BackupScheduleConfig>('/admin/backups/schedule')
+      return data
+    },
+    updateSchedule(config: import('@/types').BackupScheduleConfig) {
+      return apiClient.put('/admin/backups/schedule', config)
+    },
+    async createBackup(expireDays?: number): Promise<import('@/types').BackupRecord> {
+      const { data } = await apiClient.post<import('@/types').BackupRecord>('/admin/backups', expireDays ? { expire_days: expireDays } : {})
+      return data
+    },
+    async listBackups(): Promise<{ items: import('@/types').BackupRecord[] }> {
+      const { data } = await apiClient.get<{ items: import('@/types').BackupRecord[] }>('/admin/backups')
+      return data
+    },
+    async getBackup(id: string): Promise<import('@/types').BackupRecord> {
+      const { data } = await apiClient.get<import('@/types').BackupRecord>(`/admin/backups/${id}`)
+      return data
+    },
+    deleteBackup(id: string) {
+      return apiClient.delete(`/admin/backups/${id}`)
+    },
+    async getDownloadURL(id: string): Promise<{ url: string }> {
+      const { data } = await apiClient.get<{ url: string }>(`/admin/backups/${id}/download-url`)
+      return data
+    },
+    async restoreBackup(id: string, password: string): Promise<import('@/types').BackupRecord> {
+      const { data } = await apiClient.post<import('@/types').BackupRecord>(`/admin/backups/${id}/restore`, { password })
+      return data
+    },
+  },
+  system: {
+    async getVersion(): Promise<{ version: string }> {
+      const { data } = await apiClient.get<{ version: string }>('/admin/system/version')
+      return data
+    },
+    async checkUpdates(force = false): Promise<import('@/types').VersionInfo> {
+      const { data } = await apiClient.get<import('@/types').VersionInfo>('/admin/system/check-updates', {
+        params: force ? { force: 'true' } : undefined,
+      })
+      return data
+    },
+    async performUpdate(): Promise<import('@/types').UpdateResult> {
+      const { data } = await apiClient.post<import('@/types').UpdateResult>('/admin/system/update')
+      return data
+    },
+    async rollback(): Promise<import('@/types').UpdateResult> {
+      const { data } = await apiClient.post<import('@/types').UpdateResult>('/admin/system/rollback')
+      return data
+    },
+    async restartService(): Promise<{ message: string }> {
+      const { data } = await apiClient.post<{ message: string }>('/admin/system/restart')
       return data
     },
   },
@@ -432,7 +560,7 @@ export const adminAPI = {
     list: (
       page = 1,
       pageSize = 20,
-      filters?: { type?: RedeemCodeType; status?: string; search?: string },
+      filters?: { type?: RedeemCodeType; status?: string; search?: string; sort_by?: string; sort_order?: string },
       options?: { signal?: AbortSignal },
     ) => listEndpoint<RedeemCode>('/admin/redeem-codes', page, pageSize, filters, options),
     async getStats(): Promise<Record<string, unknown>> {
@@ -440,10 +568,22 @@ export const adminAPI = {
       return data
     },
     generate(data: Record<string, unknown>) {
-      return apiClient.post('/admin/redeem-codes/generate', data)
+      return apiClient.post<RedeemCode[]>('/admin/redeem-codes/generate', data)
     },
     delete(id: number) {
       return apiClient.delete(`/admin/redeem-codes/${id}`)
+    },
+    async batchDelete(ids: number[]): Promise<{ deleted: number }> {
+      const { data } = await apiClient.post<{ deleted: number }>('/admin/redeem-codes/batch-delete', { ids })
+      return data
+    },
+    async expire(id: number): Promise<RedeemCode> {
+      const { data } = await apiClient.post<RedeemCode>(`/admin/redeem-codes/${id}/expire`)
+      return data
+    },
+    async exportCodes(filters?: Record<string, unknown>): Promise<Blob> {
+      const response = await apiClient.get('/admin/redeem-codes/export', { params: filters, responseType: 'blob' })
+      return response.data
     },
   },
   promo: {
@@ -458,6 +598,8 @@ export const adminAPI = {
     delete(id: number) {
       return apiClient.delete(`/admin/promo-codes/${id}`)
     },
+    getUsages: (id: number, page = 1, pageSize = 20, options?: { signal?: AbortSignal }) =>
+      listEndpoint<Record<string, unknown>>(`/admin/promo-codes/${id}/usages`, page, pageSize, {}, options),
   },
   announcements: {
     list: (page = 1, pageSize = 20, filters?: Record<string, unknown>, options?: { signal?: AbortSignal }) =>
@@ -497,6 +639,15 @@ export const adminAPI = {
     },
     getPlans() {
       return apiClient.get<SubscriptionPlan[]>('/admin/payment/plans')
+    },
+    createPlan(data: Record<string, unknown>) {
+      return apiClient.post<SubscriptionPlan>('/admin/payment/plans', data)
+    },
+    updatePlan(id: number, data: Record<string, unknown>) {
+      return apiClient.put<SubscriptionPlan>(`/admin/payment/plans/${id}`, data)
+    },
+    deletePlan(id: number) {
+      return apiClient.delete(`/admin/payment/plans/${id}`)
     },
     getChannels() {
       return apiClient.get<PaymentChannel[]>('/admin/payment/channels')

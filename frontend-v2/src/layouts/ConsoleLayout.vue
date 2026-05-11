@@ -160,7 +160,6 @@ const pageTitle = computed(() => {
     '/admin/proxies': '代理管理',
     '/admin/redeem': '兑换码管理',
     '/admin/promo-codes': '优惠码管理',
-    '/admin/orders/dashboard': '支付总览',
     '/admin/orders': '订单管理',
     '/admin/orders/plans': '套餐管理',
     '/admin/usage': '用量统计',
@@ -190,7 +189,6 @@ const pageSubtitle = computed(() => {
     '/admin/proxies': '管理代理配置',
     '/admin/redeem': '管理兑换码',
     '/admin/promo-codes': '管理优惠码',
-    '/admin/orders/dashboard': '查看支付数据总览',
     '/admin/orders': '管理订单记录',
     '/admin/orders/plans': '管理套餐配置',
     '/admin/usage': '查看系统用量统计',
@@ -222,14 +220,18 @@ const adminNav = [
   { to: '/admin/proxies', label: '代理管理', icon: '🛡️' },
   { to: '/admin/redeem', label: '兑换码管理', icon: '🎫' },
   { to: '/admin/promo-codes', label: '优惠码管理', icon: '🎁' },
-  { to: '/admin/orders/dashboard', label: '支付总览', icon: '💰' },
   { to: '/admin/orders', label: '订单管理', icon: '📦' },
   { to: '/admin/orders/plans', label: '套餐管理', icon: '📋' },
   { to: '/admin/settings', label: '系统设置', icon: '🛠️' },
 ]
 
+const allNavPaths = computed(() => [...userNav, ...adminNav].map(n => n.to))
+
 const isActive = (path: string) => {
-  return route.path === path || route.path.startsWith(path + '/')
+  if (route.path === path) return true
+  if (!route.path.startsWith(path + '/')) return false
+  // 存在更长的匹配项时，短路径不高亮（如 /admin/orders 在 /admin/orders/dashboard 时不高亮）
+  return !allNavPaths.value.some(p => p !== path && p.startsWith(path + '/') && route.path.startsWith(p))
 }
 
 const formatBalance = (b: number) =>

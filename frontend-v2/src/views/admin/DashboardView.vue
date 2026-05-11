@@ -135,6 +135,26 @@
         </div>
       </div>
 
+      <!-- 支付收入卡片 -->
+      <div v-if="paymentStats" class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div class="group relative overflow-hidden rounded-xl border border-rose-500/20 bg-slate-800/40 p-5 backdrop-blur-sm transition hover:border-rose-500/40">
+          <div class="absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full bg-rose-500/10 blur-2xl"></div>
+          <div class="relative"><div class="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">💰 今日收入</div><div class="text-3xl font-bold text-rose-400">${{ (paymentStats.today_amount || 0).toFixed(2) }}</div><div class="mt-1 text-xs text-slate-400">{{ paymentStats.today_count || 0 }} 笔订单</div></div>
+        </div>
+        <div class="group relative overflow-hidden rounded-xl border border-blue-500/20 bg-slate-800/40 p-5 backdrop-blur-sm transition hover:border-blue-500/40">
+          <div class="absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full bg-blue-500/10 blur-2xl"></div>
+          <div class="relative"><div class="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">🏦 总收入</div><div class="text-3xl font-bold text-blue-400">${{ (paymentStats.total_amount || 0).toFixed(2) }}</div><div class="mt-1 text-xs text-slate-400">{{ paymentStats.total_count || 0 }} 笔订单</div></div>
+        </div>
+        <div class="group relative overflow-hidden rounded-xl border border-emerald-500/20 bg-slate-800/40 p-5 backdrop-blur-sm transition hover:border-emerald-500/40">
+          <div class="absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full bg-emerald-500/10 blur-2xl"></div>
+          <div class="relative"><div class="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">📊 平均客单</div><div class="text-3xl font-bold text-emerald-400">${{ (paymentStats.avg_amount || 0).toFixed(2) }}</div><div class="mt-1 text-xs text-slate-400">近30天</div></div>
+        </div>
+        <div class="group relative overflow-hidden rounded-xl border border-amber-500/20 bg-slate-800/40 p-5 backdrop-blur-sm transition hover:border-amber-500/40">
+          <div class="absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full bg-amber-500/10 blur-2xl"></div>
+          <div class="relative"><div class="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">👥 消费用户</div><div class="text-3xl font-bold text-amber-400">{{ (paymentStats.top_users || []).length }}</div><div class="mt-1 text-xs text-slate-400">近30天</div></div>
+        </div>
+      </div>
+
       <!-- 时间范围筛选 -->
       <div class="mb-6 rounded-xl border border-slate-700/50 bg-slate-800/40 p-5 backdrop-blur-sm">
         <div class="flex flex-wrap items-center gap-4">
@@ -191,12 +211,12 @@
                 <div class="flex-1">
                   <div class="mb-1 flex items-center justify-between text-sm">
                     <span class="font-medium text-white">{{ model.model }}</span>
-                    <span class="text-slate-400">{{ formatTokens(model.tokens) }}</span>
+                    <span class="text-slate-400">{{ formatTokens(model.total_tokens) }}</span>
                   </div>
                   <div class="h-2 overflow-hidden rounded-full bg-slate-700/50">
                     <div
                       class="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600"
-                      :style="{ width: `${(model.tokens / modelStats[0].tokens) * 100}%` }"
+                      :style="{ width: `${(model.total_tokens / modelStats[0].total_tokens) * 100}%` }"
                     ></div>
                   </div>
                 </div>
@@ -218,6 +238,44 @@
               <canvas ref="trendChartCanvas"></canvas>
             </div>
             <div v-else class="flex h-64 items-center justify-center text-sm text-slate-400">暂无数据</div>
+          </div>
+
+          <!-- 支付收入趋势 + 支付分布 + 消费排行 -->
+          <div class="rounded-xl border border-slate-700/50 bg-slate-800/40 p-5 backdrop-blur-sm">
+            <h3 class="mb-4 text-lg font-bold text-white">💰 收入趋势 (近30天)</h3>
+            <div v-if="!paymentStats" class="flex h-48 items-center justify-center"><div class="text-center"><div class="mb-2 inline-block h-6 w-6 animate-spin rounded-full border-3 border-slate-700 border-t-rose-500"></div><p class="text-xs text-slate-400">加载中...</p></div></div>
+            <div v-else-if="paymentStats.daily_series?.length" class="h-48"><canvas ref="revenueChartCanvas"></canvas></div>
+            <div v-else class="flex h-48 items-center justify-center text-sm text-slate-400">暂无支付数据</div>
+          </div>
+
+          <!-- 支付方式分布 -->
+          <div class="rounded-xl border border-slate-700/50 bg-slate-800/40 p-5 backdrop-blur-sm">
+            <h3 class="mb-4 text-lg font-bold text-white">💳 支付方式分布</h3>
+            <div v-if="!paymentStats" class="flex h-48 items-center justify-center"><p class="text-xs text-slate-400">加载中...</p></div>
+            <div v-else-if="(paymentStats.payment_methods || []).length === 0" class="flex h-48 items-center justify-center text-sm text-slate-400">暂无数据</div>
+            <div v-else class="space-y-3">
+              <div v-for="m in paymentStats.payment_methods" :key="m.type" class="flex items-center gap-3">
+                <span class="h-3 w-3 shrink-0 rounded-full" :style="{ backgroundColor: ({ alipay:'#3b82f6', wxpay:'#10b981', alipay_direct:'#60a5fa', wxpay_direct:'#34d399', stripe:'#a78bfa' } as any)[m.type] || '#64748b' }"></span>
+                <span class="flex-1 text-xs text-slate-300">{{ m.type }}</span>
+                <span class="text-xs text-slate-500">{{ m.count }} 笔</span>
+                <span class="text-xs font-bold text-white w-20 text-right">${{ (m.amount || 0).toFixed(2) }}</span>
+                <div class="hidden sm:block h-1.5 w-20 rounded-full bg-slate-700/50 overflow-hidden"><div class="h-full rounded-full transition-all" :style="{ width: `${Math.min(((m.amount || 0) / (paymentStats.payment_methods[0]?.amount || 1)) * 100, 100)}%`, backgroundColor: ({ alipay:'#3b82f6', wxpay:'#10b981', alipay_direct:'#60a5fa', wxpay_direct:'#34d399', stripe:'#a78bfa' } as any)[m.type] || '#64748b' }" /></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 消费排行 -->
+          <div class="rounded-xl border border-slate-700/50 bg-slate-800/40 p-5 backdrop-blur-sm">
+            <h3 class="mb-4 text-lg font-bold text-white">🏆 消费排行</h3>
+            <div v-if="!paymentStats" class="flex h-48 items-center justify-center"><p class="text-xs text-slate-400">加载中...</p></div>
+            <div v-else-if="(paymentStats.top_users || []).length === 0" class="flex h-48 items-center justify-center text-sm text-slate-400">暂无数据</div>
+            <div v-else class="space-y-2">
+              <div v-for="(u, i) in (paymentStats.top_users || []).slice(0, 8)" :key="u.user_id" class="flex items-center gap-3 rounded-lg p-2 transition hover:bg-white/[0.04]">
+                <span :class="['flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black', i===0?'bg-rose-500/20 text-rose-400':i===1?'bg-amber-500/20 text-amber-400':i===2?'bg-yellow-500/20 text-yellow-400':'bg-white/[0.06] text-slate-400']">{{ i+1 }}</span>
+                <span class="flex-1 text-xs text-slate-300 truncate">{{ u.email }}</span>
+                <span class="text-xs font-bold text-white">${{ (u.amount || 0).toFixed(2) }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -242,9 +300,12 @@
 import { ref, onMounted, watch, nextTick } from 'vue'
 import { adminAPI } from '@/api/admin'
 import type { DashboardStats, TrendDataPoint, ModelStat } from '@/types'
+import type { PaymentDashboardStats } from '@/types/payment'
 import Chart from 'chart.js/auto'
 
 const stats = ref<DashboardStats | null>(null)
+const paymentStats = ref<PaymentDashboardStats | null>(null)
+const paymentLoading = ref(false)
 const loading = ref(false)
 const chartsLoading = ref(false)
 
@@ -252,7 +313,9 @@ const chartsLoading = ref(false)
 const trendData = ref<TrendDataPoint[]>([])
 const modelStats = ref<ModelStat[]>([])
 const trendChartCanvas = ref<HTMLCanvasElement | null>(null)
+const revenueChartCanvas = ref<HTMLCanvasElement | null>(null)
 let trendChart: Chart | null = null
+let revenueChart: Chart | null = null
 
 // 时间范围
 const formatLocalDate = (date: Date): string => {
@@ -328,7 +391,7 @@ const createTrendChart = () => {
       datasets: [
         {
           label: 'Token 使用量',
-          data: trendData.value.map(d => d.tokens),
+          data: trendData.value.map(d => d.total_tokens),
           borderColor: '#dc2626',
           backgroundColor: 'rgba(220, 38, 38, 0.1)',
           fill: true,
@@ -345,7 +408,7 @@ const createTrendChart = () => {
         },
         tooltip: {
           callbacks: {
-            label: (context) => `Token: ${formatTokens(context.parsed.y)}`
+            label: (context: any) => `Token: ${formatTokens(context.parsed.y ?? 0)}`
           }
         }
       },
@@ -373,6 +436,33 @@ const createTrendChart = () => {
   })
 }
 
+const createRevenueChart = () => {
+  if (!revenueChartCanvas.value || !paymentStats.value?.daily_series?.length) return
+  if (revenueChart) { revenueChart.destroy(); revenueChart = null }
+  const ctx = revenueChartCanvas.value.getContext('2d')
+  if (!ctx) return
+  const series = paymentStats.value.daily_series
+  revenueChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: series.map(d => d.date.slice(5)),
+      datasets: [
+        { label: '收入 ($)', data: series.map(d => d.amount), borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2, yAxisID: 'y' },
+        { label: '订单数', data: series.map(d => d.count), borderColor: '#22d3ee', fill: false, tension: 0.4, pointRadius: 0, borderWidth: 2, yAxisID: 'y1' },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 }, usePointStyle: true } } },
+      scales: {
+        x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', font: { size: 10 }, maxTicksLimit: 10 } },
+        y: { type: 'linear', position: 'left', grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', font: { size: 10 }, callback: (v: any) => `$${v}` } },
+        y1: { type: 'linear', position: 'right', grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+      },
+    },
+  })
+}
+
 // 加载数据
 const loadDashboardStats = async () => {
   loading.value = true
@@ -393,6 +483,18 @@ const loadDashboardStats = async () => {
     trendData.value = response.trend || []
     modelStats.value = (response as any).models || []
 
+    // 同时加载支付收入数据
+    paymentLoading.value = true
+    try {
+      const pResp = await adminAPI.payment.getDashboard(30)
+      const d = (pResp as any).data
+      // 取第一个 truthy：d.data（二次解包）/ d / pResp.data / pResp
+      const pd = (d && typeof d === 'object' && !Array.isArray(d) && 'data' in d) ? d.data : d
+      paymentStats.value = pd && typeof pd.today_amount === 'number' ? pd : null
+      await nextTick()
+      createRevenueChart()
+    } catch { /* 非关键 */ }
+    finally { paymentLoading.value = false }
     await nextTick()
     createTrendChart()
   } catch (error) {

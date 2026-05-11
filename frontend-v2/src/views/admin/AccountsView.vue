@@ -390,10 +390,11 @@ onUnmounted(() => {
 
     <!-- Card Grid View -->
     <template v-else-if="viewMode === 'grid'">
-      <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div class="mb-6 flex flex-wrap-reverse justify-end gap-4">
         <AccountCard
           v-for="account in accounts"
           :key="account.id"
+          class="w-full sm:w-[calc(50%-0.5rem)] xl:w-[calc(33.333%-0.667rem)]"
           :account="account"
           :groups="allGroups"
           :today-stats="todayStats"

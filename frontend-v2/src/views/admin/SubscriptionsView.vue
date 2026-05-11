@@ -57,10 +57,11 @@
       </div>
 
       <!-- 卡片网格 -->
-      <div v-else class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div v-else class="mb-6 flex flex-wrap-reverse justify-end gap-4">
         <SubscriptionCard
           v-for="sub in subscriptions"
           :key="sub.id"
+          class="w-full sm:w-[calc(50%-0.5rem)] xl:w-[calc(33.333%-0.667rem)]"
           :subscription="sub"
           @extend="handleExtend"
           @reset-quota="handleResetQuota"
